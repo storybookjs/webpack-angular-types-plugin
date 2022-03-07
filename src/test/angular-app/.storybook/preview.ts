@@ -1,3 +1,5 @@
+(window as any).STORYBOOK_ANGULAR_ARG_TYPES = {};
+
 export const parameters = {
     actions: { argTypesRegex: "^on[A-Z].*" },
     controls: {

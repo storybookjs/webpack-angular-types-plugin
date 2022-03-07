@@ -1,13 +1,13 @@
 import { ClassDeclaration } from "ts-morph";
 
 export const getProperties = (classDeclaration: ClassDeclaration) => {
+    classDeclaration.getExtends();
     const properties = classDeclaration.getProperties();
     const inputs = [];
     const outputs = [];
     const propertiesWithoutDecorators = [];
 
     for (const property of properties) {
-        console.log(property.getType().getText());
         const prop = {
             name: property.getName(),
             defaultValue: property.getInitializer()?.getText(),

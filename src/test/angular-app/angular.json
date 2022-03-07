@@ -7,6 +7,32 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
+    "storybook": {
+      "root": "",
+      "projectType": "library",
+      "architect": {
+        "serve": {
+          "builder": "@storybook/angular:start-storybook",
+          "options": {
+            "browserTarget": "angular-app:build",
+            "configDir": ".storybook",
+            "port": 9003,
+            "compodoc": false,
+            "tsConfig": ".storybook/tsconfig.json"
+          }
+        },
+        "build": {
+          "builder": "@storybook/angular:build-storybook",
+          "options": {
+            "outputDir": "dist/storybook",
+            "browserTarget": "angular-app:build",
+            "configDir": ".storybook",
+            "compodoc": false,
+            "tsConfig": ".storybook/tsconfig.json"
+          }
+        }
+      }
+    },
     "angular-app": {
       "projectType": "application",
       "schematics": {

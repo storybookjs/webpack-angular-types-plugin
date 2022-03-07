@@ -26,8 +26,32 @@ const getAngularRelevantClasses = (sourceFiles: SourceFile[]) =>
         )
         .reduce((acc, val) => acc.concat(val), []);
 
-export const extractTypes = (project: Project) => {
+export function generateTypDocs(filepath: string) {
+    const project = new Project({
+        tsConfigFilePath: "../angular-app/.storybook/tsconfig.json",
+    });
+    project.addSourceFileAtPath(filepath);
+    const clasDecls = getAngularRelevantClasses(project.getSourceFiles()).map(
+        (classDecl) => {
+            return {
+                name: classDecl.getName(),
+                ...getProperties(classDecl),
+            };
+        }
+    );
+    return Object.fromEntries(
+        new Map(
+            clasDecls.map((type) => {
+                const { name, ...rest } = type;
+                return [name, rest];
+            })
+        )
+    );
+}
+
+export const extractTypes = (project: Project): DirectiveTypeExtraction => {
     const sourceFiles = getSourceFiles(project);
+
     const classesWithProps = getAngularRelevantClasses(sourceFiles).map(
         (classDeclaration) => ({
             name: classDeclaration.getName(),
@@ -44,3 +68,11 @@ export const extractTypes = (project: Project) => {
         )
     );
 };
+
+export interface DirectiveTypeExtraction {
+    [key: string]: {
+        inputs: any[];
+        outputs: any[];
+        propertiesWithoutDecorators: any[];
+    };
+}

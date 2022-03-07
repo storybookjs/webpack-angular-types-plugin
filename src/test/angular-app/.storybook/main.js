@@ -1,4 +1,5 @@
-import { WebpackAngularTypesPlugin } from "../../../webpack-angular-types-plugin";
+const WebpackAngularTypesPlugin =
+    require("../../../../dist/webpack-angular-types-plugin/plugin").WebpackAngularTypesPlugin;
 
 module.exports = {
     stories: [
