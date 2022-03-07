@@ -1,6 +1,6 @@
 import { Project } from "ts-morph";
 import { Compiler, Dependency, Module } from "webpack";
-import { generateTypDocs } from "./extract-types";
+import { generateTypeDocs } from "./extract-types";
 
 const getComponentArgCodeBlock = (cmpName: string, types: object) => `
 if (window.STORYBOOK_ANGULAR_ARG_TYPES !== undefined) {
@@ -31,9 +31,6 @@ export class WebpackAngularTypesPlugin {
     apply(compiler: Compiler) {
         compiler.hooks.compilation.tap("TestPlugin", (compilation) => {
             compilation.hooks.seal.tap("TestPlugin", () => {
-                console.log(
-                    "------------ 123123 123123123123 --------------------"
-                );
                 const tsProject = new Project({
                     // todo offer option or use proper default path
                     tsConfigFilePath: "./.storybook/tsconfig.json",
@@ -48,20 +45,19 @@ export class WebpackAngularTypesPlugin {
                     compilation.modules,
                     tsProject
                 );
-
-                // const types = extractTypes(tsProject);
                 for (const [name, module] of modulesToProcess) {
-                    const types = generateTypDocs(name);
-                    const firstTypeKey = Object.keys(types)[0];
-                    const firstComponentTypes = types[firstTypeKey];
-                    module.addDependency(
-                        new CodeDocDependency(
-                            getComponentArgCodeBlock(
-                                firstTypeKey,
-                                firstComponentTypes
+                    const types = generateTypeDocs(name);
+                    for (const componentTypeKey of Object.keys(types)) {
+                        const componentTypeInfo = types[componentTypeKey];
+                        module.addDependency(
+                            new CodeDocDependency(
+                                getComponentArgCodeBlock(
+                                    componentTypeKey,
+                                    componentTypeInfo
+                                )
                             )
-                        )
-                    );
+                        );
+                    }
                 }
             });
         });

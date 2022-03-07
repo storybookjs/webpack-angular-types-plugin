@@ -26,7 +26,7 @@ const getAngularRelevantClasses = (sourceFiles: SourceFile[]) =>
         )
         .reduce((acc, val) => acc.concat(val), []);
 
-export function generateTypDocs(filepath: string) {
+export function generateTypeDocs(filepath: string) {
     const project = new Project({
         tsConfigFilePath: "../angular-app/.storybook/tsconfig.json",
     });
