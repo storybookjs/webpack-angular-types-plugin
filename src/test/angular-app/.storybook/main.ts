@@ -1,3 +1,5 @@
+import { WebpackAngularTypesPlugin } from "../../../webpack-angular-types-plugin";
+
 module.exports = {
     stories: [
         "../src/**/*.stories.mdx",
@@ -11,5 +13,9 @@ module.exports = {
     framework: "@storybook/angular",
     core: {
         builder: "webpack5",
+    },
+    webpackFinal: async (config) => {
+        config.plugins.push(new WebpackAngularTypesPlugin());
+        return config;
     },
 };
