@@ -1,0 +1,229 @@
+import {
+    ClassDeclaration,
+    DecoratableNode,
+    JSDocableNode,
+    Project,
+    PropertyDeclaration,
+    SetAccessorDeclaration,
+    SourceFile,
+    Type,
+} from "ts-morph";
+import { ClassInformation, ClassProperties, Property } from "./types";
+
+function extractComponentOrDirectiveAnnotatedClasses(
+    sourceFile: SourceFile
+): ClassDeclaration[] {
+    return sourceFile
+        .getClasses()
+        .filter(
+            (classDeclaration: ClassDeclaration) =>
+                !!(
+                    classDeclaration.getDecorator("Component") ||
+                    classDeclaration.getDecorator("Directive")
+                )
+        )
+        .filter(
+            (classDeclaration: ClassDeclaration) =>
+                !classDeclaration.isAbstract()
+        )
+        .reduce(
+            (acc: ClassDeclaration[], val: ClassDeclaration) => acc.concat(val),
+            []
+        );
+}
+
+function retrieveAngularDecoratorAlias(
+    node: DecoratableNode,
+    decoratorsToCheck: string[] = ["Input", "Output"]
+): string | undefined {
+    for (const decoratorToCheck of decoratorsToCheck) {
+        if (node.getDecorator(decoratorToCheck)) {
+            const decoratorArgs = node
+                .getDecorator(decoratorToCheck)
+                ?.getArguments();
+            if (decoratorArgs && decoratorArgs.length === 1) {
+                return decoratorArgs[0].getText();
+            }
+        }
+    }
+    return undefined;
+}
+
+function getJsDocs(node: JSDocableNode): string {
+    return (
+        node
+            .getJsDocs()
+            .map((doc) => doc.getCommentText())
+            .join("\n") || ""
+    );
+}
+
+function typeToString(type: Type): string {
+    // TODO this needs to be refined. for example for event emitter import("...").EventEmitter<T>
+    //      is printed by getText. I guess we need to follow the type here to resolve it to something useful
+    const typeStr = type.getApparentType().getText();
+    const lastIndexOfDot = typeStr.lastIndexOf(".");
+    if (lastIndexOfDot > -1) {
+        return typeStr.slice(lastIndexOfDot + 1);
+    }
+    return typeStr;
+}
+
+function mapProperty(property: PropertyDeclaration): Property {
+    return {
+        alias: retrieveAngularDecoratorAlias(property),
+        name: property.getName(),
+        defaultValue: property.getInitializer()?.getText() || "",
+        description: getJsDocs(property),
+        type: typeToString(property.getType()),
+    };
+}
+
+function mapSetAccessor(setAccessor: SetAccessorDeclaration): Property {
+    const parameters = setAccessor.getParameters();
+    const parameter = parameters.length === 1 ? parameters[0] : undefined;
+    if (!parameter) {
+        throw new Error("Invalid number of arguments for set accessor.");
+    }
+    return {
+        alias: retrieveAngularDecoratorAlias(setAccessor),
+        name: setAccessor.getName(),
+        // Set accessors can not have a default value
+        defaultValue: "",
+        description: getJsDocs(setAccessor),
+        type: typeToString(parameter.getType()),
+    };
+}
+
+function getClassProperties(
+    classDeclaration: ClassDeclaration
+): ClassProperties {
+    classDeclaration.getExtends();
+    const properties = classDeclaration.getProperties();
+    const setters = classDeclaration.getSetAccessors();
+
+    const inputs = [];
+    const outputs = [];
+    const propertiesWithoutDecorators = [];
+
+    for (const declaration of [...properties, ...setters]) {
+        let prop: Property;
+        if (declaration instanceof PropertyDeclaration) {
+            prop = mapProperty(declaration);
+        } else {
+            prop = mapSetAccessor(declaration);
+        }
+        if (declaration.getDecorator("Input")) {
+            inputs.push(prop);
+        } else if (declaration.getDecorator("Output")) {
+            outputs.push(prop);
+        } else {
+            propertiesWithoutDecorators.push(prop);
+        }
+    }
+
+    return { inputs, outputs, propertiesWithoutDecorators };
+}
+
+export function removeFromMapIfPresent<TKey, TVal>(
+    map: Map<TKey, TVal>,
+    key: TKey
+): void {
+    if (map.has(key)) {
+        map.delete(key);
+    }
+}
+
+export function mergeProperties(
+    properties: ClassProperties[]
+): ClassProperties {
+    if (properties.length === 1) {
+        return properties[0];
+    }
+    const inputs = new Map<string, Property>();
+    const outputs = new Map<string, Property>();
+    const propertiesWithoutDecorators = new Map<string, Property>();
+    for (let i = properties.length - 1; i > -1; i--) {
+        const toMerge = properties[i];
+        for (const inputToMerge of toMerge.inputs) {
+            // can happen if a newly defined input was defined as another property type
+            removeFromMapIfPresent(outputs, inputToMerge.name);
+            removeFromMapIfPresent(
+                propertiesWithoutDecorators,
+                inputToMerge.name
+            );
+            inputs.set(inputToMerge.name, inputToMerge);
+        }
+        for (const outputToMerge of toMerge.outputs) {
+            removeFromMapIfPresent(inputs, outputToMerge.name);
+            removeFromMapIfPresent(
+                propertiesWithoutDecorators,
+                outputToMerge.name
+            );
+            outputs.set(outputToMerge.name, outputToMerge);
+        }
+        for (const propertyWithoutDecoratorsToMerge of toMerge.propertiesWithoutDecorators) {
+            removeFromMapIfPresent(
+                inputs,
+                propertyWithoutDecoratorsToMerge.name
+            );
+            removeFromMapIfPresent(
+                outputs,
+                propertyWithoutDecoratorsToMerge.name
+            );
+            propertiesWithoutDecorators.set(
+                propertyWithoutDecoratorsToMerge.name,
+                propertyWithoutDecoratorsToMerge
+            );
+        }
+    }
+    return {
+        inputs: Array.from(inputs.values()),
+        outputs: Array.from(outputs.values()),
+        propertiesWithoutDecorators: Array.from(
+            propertiesWithoutDecorators.values()
+        ),
+    };
+}
+
+export function collectBaseClasses(cls: ClassDeclaration): ClassDeclaration[] {
+    const bases: ClassDeclaration[] = [];
+    let currentClass = cls.getBaseClass();
+    while (currentClass) {
+        bases.push(currentClass);
+        currentClass = currentClass.getBaseClass();
+    }
+    return bases;
+}
+
+export function generateClassInformation(
+    filepath: string,
+    project: Project
+): ClassInformation[] {
+    const sourceFile = project.getSourceFile(filepath);
+    if (!sourceFile) {
+        return [];
+    }
+    const annotatedClassDeclarations =
+        extractComponentOrDirectiveAnnotatedClasses(sourceFile);
+    const result: ClassInformation[] = [];
+    for (const classDeclaration of annotatedClassDeclarations) {
+        const baseClasses = collectBaseClasses(classDeclaration);
+        const properties = [classDeclaration, ...baseClasses].map((bc) =>
+            getClassProperties(bc)
+        );
+        const mergedProperties = mergeProperties(properties);
+        const name = classDeclaration.getName();
+
+        // do not generate type info for anonymous classes
+        if (!name) {
+            continue;
+        }
+        result.push({
+            name,
+            modulePath: filepath,
+            properties: mergedProperties,
+        });
+    }
+    return result;
+}

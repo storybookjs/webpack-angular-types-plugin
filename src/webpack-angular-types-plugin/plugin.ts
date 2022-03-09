@@ -1,44 +1,24 @@
 import { Project } from "ts-morph";
-import { Compiler, Dependency, Module } from "webpack";
-import { generateTypeDocs } from "./extract-types";
-
-const getComponentArgCodeBlock = (cmpName: string, types: object) => `
-if (window.STORYBOOK_ANGULAR_ARG_TYPES !== undefined) {
-  window.STORYBOOK_ANGULAR_ARG_TYPES.${cmpName} = ${JSON.stringify(types)};
-}
-`;
-
-class CodeDocDependency extends Dependency {
-    constructor(public codeDocInstructions: string) {
-        super();
-    }
-    // eslint-disable-next-line
-    updateHash(hash: any) {
-        hash.update(this.codeDocInstructions);
-    }
-}
-
-class MyDepTemplate {
-    // eslint-disable-next-line
-    apply(myDep: CodeDocDependency, source: any) {
-        if (myDep.codeDocInstructions) {
-            source.insert(Infinity, myDep.codeDocInstructions);
-        }
-    }
-}
+import { Compiler, Module } from "webpack";
+import { getComponentArgCodeBlock } from "./component-arg-block-code-template";
+import { generateClassInformation } from "./type-extraction";
+import { ClassInformation } from "./types";
+import { CodeDocDependency, CodeDocDependencyTemplate } from "./webpack-types";
 
 export class WebpackAngularTypesPlugin {
     apply(compiler: Compiler) {
         compiler.hooks.compilation.tap("TestPlugin", (compilation) => {
             compilation.hooks.seal.tap("TestPlugin", () => {
+                // TODO the whole project is created each time the seal hook of the compilation is called
+                //  this is potentially pretty costly since often times only a small subset of the files
+                //  change on incremental reload. Probably better: remove/add changed/new source files
+                //  incrementally
                 const tsProject = new Project({
-                    // todo offer option or use proper default path
                     tsConfigFilePath: "./.storybook/tsconfig.json",
                 });
-
                 compilation.dependencyTemplates.set(
                     CodeDocDependency,
-                    new MyDepTemplate()
+                    new CodeDocDependencyTemplate()
                 );
 
                 const modulesToProcess = this.collectModulesToProcess(
@@ -46,15 +26,12 @@ export class WebpackAngularTypesPlugin {
                     tsProject
                 );
                 for (const [name, module] of modulesToProcess) {
-                    const types = generateTypeDocs(name);
-                    for (const componentTypeKey of Object.keys(types)) {
-                        const componentTypeInfo = types[componentTypeKey];
+                    const classInformation: ClassInformation[] =
+                        generateClassInformation(name, tsProject);
+                    for (const ci of classInformation) {
                         module.addDependency(
                             new CodeDocDependency(
-                                getComponentArgCodeBlock(
-                                    componentTypeKey,
-                                    componentTypeInfo
-                                )
+                                getComponentArgCodeBlock(ci.name, ci.properties)
                             )
                         );
                     }
@@ -63,6 +40,7 @@ export class WebpackAngularTypesPlugin {
         });
     }
 
+    // noinspection JSMethodCanBeStatic
     private collectModulesToProcess(
         modules: Set<Module>,
         tsProject: Project
