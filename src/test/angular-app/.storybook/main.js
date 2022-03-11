@@ -1,6 +1,9 @@
 const WebpackAngularTypesPlugin =
     require("../../../../dist/webpack-angular-types-plugin/plugin").WebpackAngularTypesPlugin;
 
+const extractArgTypes =
+    require("../../../../dist/extract-args-types/extract-arg-types").extractArgTypes;
+
 module.exports = {
     stories: [
         "../src/**/*.stories.mdx",
@@ -8,6 +11,10 @@ module.exports = {
     ],
     addons: [
         "@storybook/addon-links",
+        {
+            name: "@storybook/addon-docs",
+            options: { extractArgTypes },
+        },
         "@storybook/addon-essentials",
         "@storybook/addon-interactions",
     ],

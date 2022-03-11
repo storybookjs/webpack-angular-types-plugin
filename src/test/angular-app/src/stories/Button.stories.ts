@@ -43,8 +43,3 @@ Small.args = {
     size: "small",
     label: "Button",
 };
-
-// you need to reference the components for testing, otherwise they will not appear in the modules
-// after the sealing of webpack (which kinda makes sense)
-export const Test = AppComponent;
-export const Test2 = ChildComponent;
