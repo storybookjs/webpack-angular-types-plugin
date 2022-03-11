@@ -50,7 +50,7 @@ const mapPropToArgsTableProp = (
     category: "inputs" | "outputs" | "properties"
 ): ArgsTableProp => ({
     name: prop.name,
-    description: prop.description.join(" "),
+    description: prop.description,
     defaultValue: prop.defaultValue,
     type: { name: prop.type, required: true }, // todo get required
     table: {
@@ -87,14 +87,7 @@ const mapPropsToArgsTableProps = (directive: ExtractedDirective): any => {
         );
     }
 
-    return Object.fromEntries(
-        new Map(
-            argsTableProps.map((type) => {
-                const { name, ...rest } = type;
-                return [name, rest];
-            })
-        )
-    );
+    return argsTableProps;
 };
 
 export const extractArgTypes = (directive: any): ArgsTableProps | undefined => {
