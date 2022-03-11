@@ -3,7 +3,10 @@ import { Compiler, Module } from "webpack";
 import { getComponentArgCodeBlock } from "./component-arg-block-code-template";
 import { generateClassInformation } from "./type-extraction";
 import { ClassInformation } from "./types";
-import { CodeDocDependency, CodeDocDependencyTemplate } from "./webpack-types";
+import {
+    CodeDocDependency,
+    CodeDocDependencyTemplate,
+} from "./code-doc-dependency";
 
 export class WebpackAngularTypesPlugin {
     apply(compiler: Compiler) {

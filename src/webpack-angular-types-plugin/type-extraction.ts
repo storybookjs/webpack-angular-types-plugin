@@ -32,11 +32,10 @@ function extractComponentOrDirectiveAnnotatedClasses(
         );
 }
 
-function retrieveAngularDecoratorAlias(
-    node: DecoratableNode,
-    decoratorsToCheck: string[] = ["Input", "Output"]
+function retrieveInputOutputDecoratorAlias(
+    node: DecoratableNode
 ): string | undefined {
-    for (const decoratorToCheck of decoratorsToCheck) {
+    for (const decoratorToCheck of ["Input", "Output"]) {
         if (node.getDecorator(decoratorToCheck)) {
             const decoratorArgs = node
                 .getDecorator(decoratorToCheck)
@@ -71,7 +70,7 @@ function typeToString(type: Type): string {
 
 function mapProperty(property: PropertyDeclaration): Property {
     return {
-        alias: retrieveAngularDecoratorAlias(property),
+        alias: retrieveInputOutputDecoratorAlias(property),
         name: property.getName(),
         defaultValue: property.getInitializer()?.getText() || "",
         description: getJsDocs(property),
@@ -86,7 +85,7 @@ function mapSetAccessor(setAccessor: SetAccessorDeclaration): Property {
         throw new Error("Invalid number of arguments for set accessor.");
     }
     return {
-        alias: retrieveAngularDecoratorAlias(setAccessor),
+        alias: retrieveInputOutputDecoratorAlias(setAccessor),
         name: setAccessor.getName(),
         // Set accessors can not have a default value
         defaultValue: "",
@@ -98,7 +97,6 @@ function mapSetAccessor(setAccessor: SetAccessorDeclaration): Property {
 function getClassProperties(
     classDeclaration: ClassDeclaration
 ): ClassProperties {
-    classDeclaration.getExtends();
     const properties = classDeclaration.getProperties();
     const setters = classDeclaration.getSetAccessors();
 
@@ -125,7 +123,7 @@ function getClassProperties(
     return { inputs, outputs, propertiesWithoutDecorators };
 }
 
-export function removeFromMapIfPresent<TKey, TVal>(
+export function removeFromMapIfExists<TKey, TVal>(
     map: Map<TKey, TVal>,
     key: TKey
 ): void {
@@ -147,27 +145,29 @@ export function mergeProperties(
         const toMerge = properties[i];
         for (const inputToMerge of toMerge.inputs) {
             // can happen if a newly defined input was defined as another property type
-            removeFromMapIfPresent(outputs, inputToMerge.name);
-            removeFromMapIfPresent(
+            // e.g. base class defines @Output property, child class overrides it as in @Input() property
+            //      this should never happen in valid/useful angular code
+            removeFromMapIfExists(outputs, inputToMerge.name);
+            removeFromMapIfExists(
                 propertiesWithoutDecorators,
                 inputToMerge.name
             );
             inputs.set(inputToMerge.name, inputToMerge);
         }
         for (const outputToMerge of toMerge.outputs) {
-            removeFromMapIfPresent(inputs, outputToMerge.name);
-            removeFromMapIfPresent(
+            removeFromMapIfExists(inputs, outputToMerge.name);
+            removeFromMapIfExists(
                 propertiesWithoutDecorators,
                 outputToMerge.name
             );
             outputs.set(outputToMerge.name, outputToMerge);
         }
         for (const propertyWithoutDecoratorsToMerge of toMerge.propertiesWithoutDecorators) {
-            removeFromMapIfPresent(
+            removeFromMapIfExists(
                 inputs,
                 propertyWithoutDecoratorsToMerge.name
             );
-            removeFromMapIfPresent(
+            removeFromMapIfExists(
                 outputs,
                 propertyWithoutDecoratorsToMerge.name
             );
