@@ -2,9 +2,12 @@
   "extends": "../tsconfig.app.json",
   "compilerOptions": {
     "types": ["node"],
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "module": "es2020",
+    "target": "esnext"
   },
   "exclude": ["../src/**/*.spec.ts", "../projects/**/*.spec.ts"],
-  "include": ["../src/**/*", "../projects/**/*"],
-  "files": ["./typings.d.ts", "main.ts", "preview.ts"]
+  "include": ["../src/**/*", "../projects/**/*", "**/*.ts"],
+  "files": ["./typings.d.ts"]
 }
