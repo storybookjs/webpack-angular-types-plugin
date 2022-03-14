@@ -8,7 +8,7 @@ import {
     SourceFile,
     Type,
 } from "ts-morph";
-import { ClassInformation, ClassProperties, Property } from "./types";
+import { ClassInformation, ClassProperties, Property } from "../types";
 
 function extractComponentOrDirectiveAnnotatedClasses(
     sourceFile: SourceFile

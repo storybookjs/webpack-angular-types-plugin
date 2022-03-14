@@ -2,7 +2,7 @@ import { Project } from "ts-morph";
 import { Compiler, Module } from "webpack";
 import { getComponentArgCodeBlock } from "./component-arg-block-code-template";
 import { generateClassInformation } from "./type-extraction";
-import { ClassInformation } from "./types";
+import { ClassInformation } from "../types";
 import {
     CodeDocDependency,
     CodeDocDependencyTemplate,
