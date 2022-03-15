@@ -41,14 +41,15 @@ const mapPropToArgsTableProp = (
     },
 });
 
-// eslint-disable-next-line
 const mapPropsToArgsTableProps = (
     directive: ClassProperties
 ): ExtendedArgType[] => {
     const argsTableProps: ExtendedArgType[] = [];
 
-    for (const [categoryKey, category] of Object.entries(directive)) {
-        for (const [, property] of Object.entries<Property>(category)) {
+    for (const [categoryKey, properties] of Object.entries<Property[]>(
+        directive
+    )) {
+        for (const property of properties) {
             argsTableProps.push(mapPropToArgsTableProp(property, categoryKey));
         }
     }
@@ -63,6 +64,5 @@ export const extractArgTypes = (directive: {
     if (!props) {
         return;
     }
-    // eslint-disable-next-line consistent-return
     return mapPropsToArgsTableProps(props);
 };
