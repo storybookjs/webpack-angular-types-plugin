@@ -33,6 +33,7 @@
   },
   "homepage": "https://github.com/storybookjs/webpack-angular-types-plugin#readme",
   "devDependencies": {
+    "@storybook/components": "^6.5.0-alpha.48",
     "@typescript-eslint/eslint-plugin": "^5.13.0",
     "@typescript-eslint/parser": "^5.13.0",
     "eslint": "^8.10.0",
@@ -45,6 +46,7 @@
     "webpack": "^5.70.0"
   },
   "peerDependencies": {
+    "@storybook/components": "^6.5.0-alpha.48",
     "webpack": "^5.0.0"
   },
   "dependencies": {

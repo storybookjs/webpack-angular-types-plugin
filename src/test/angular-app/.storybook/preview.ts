@@ -1,5 +1,7 @@
 (window as any).STORYBOOK_ANGULAR_ARG_TYPES = {};
 
+import { extractArgTypes } from "../../../extract-args-types/extract-arg-types";
+
 export const parameters = {
     actions: { argTypesRegex: "^on[A-Z].*" },
     controls: {
@@ -8,5 +10,9 @@ export const parameters = {
             date: /Date$/,
         },
     },
-    docs: { inlineStories: true },
+    docs: {
+        inlineStories: true,
+        extractArgTypes,
+        extractComponentDescription: undefined,
+    },
 };

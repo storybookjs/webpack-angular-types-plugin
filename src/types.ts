@@ -7,11 +7,15 @@ export interface Property {
     type: string;
 }
 
-export interface ClassProperties {
-    inputs: Property[];
-    outputs: Property[];
-    propertiesWithoutDecorators: Property[];
-}
+export const Categories = [
+    "inputs",
+    "outputs",
+    "propertiesWithoutDecorators",
+] as const;
+export type ClassPropertyCategories = typeof Categories[number];
+export type ClassProperties = {
+    [category in ClassPropertyCategories]: Property[];
+};
 
 export interface ClassInformation {
     name: string;
