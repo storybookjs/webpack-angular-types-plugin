@@ -1,4 +1,5 @@
 import { ArgType, TableAnnotation } from "@storybook/components";
+import { STORYBOOK_ANGULAR_ARG_TYPES } from "../constants";
 import { ClassProperties, Property } from "../types";
 
 // See https://github.com/storybookjs/storybook/blob/f4b3a880e7f00bd1b28e7691d45bcc1c41b1cafe/lib/components/src/blocks/ArgsTable/types.ts
@@ -10,7 +11,7 @@ const getAngularDirectiveProperties = (
     name: string
 ): ClassProperties | undefined =>
     // eslint-disable-next-line
-    (window as any).STORYBOOK_ANGULAR_ARG_TYPES[name];
+    (window as any)[STORYBOOK_ANGULAR_ARG_TYPES][name];
 
 const mapPropToArgsTableProp = (
     prop: Property,

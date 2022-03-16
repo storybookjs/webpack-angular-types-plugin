@@ -1,5 +1,6 @@
-(window as any).STORYBOOK_ANGULAR_ARG_TYPES = {};
+(window as any)[STORYBOOK_ANGULAR_ARG_TYPES] = {};
 
+import { STORYBOOK_ANGULAR_ARG_TYPES } from "../../../constants";
 import { extractArgTypes } from "../../../extract-args-types/extract-arg-types";
 
 export const parameters = {
