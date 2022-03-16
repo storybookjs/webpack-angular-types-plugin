@@ -68,6 +68,20 @@ function typeToString(type: Type): string {
     return typeStr;
 }
 
+function isTypeRequired(type: Type): boolean {
+    if (type.isUndefined()) {
+        return false;
+    } else if (type.isUnion()) {
+        // check if the union type contains "undefined"
+        for (type of type.getUnionTypes()) {
+            if (type.isUndefined()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 function mapProperty(property: PropertyDeclaration): Property {
     return {
         alias: retrieveInputOutputDecoratorAlias(property),
@@ -75,6 +89,7 @@ function mapProperty(property: PropertyDeclaration): Property {
         defaultValue: property.getInitializer()?.getText() || "",
         description: getJsDocs(property),
         type: typeToString(property.getType()),
+        required: isTypeRequired(property.getType()),
     };
 }
 
@@ -91,6 +106,7 @@ function mapSetAccessor(setAccessor: SetAccessorDeclaration): Property {
         defaultValue: "",
         description: getJsDocs(setAccessor),
         type: typeToString(parameter.getType()),
+        required: isTypeRequired(parameter.getType()),
     };
 }
 

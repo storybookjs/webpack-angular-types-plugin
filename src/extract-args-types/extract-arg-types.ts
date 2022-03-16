@@ -9,7 +9,7 @@ interface ExtendedArgType extends ArgType {
 const getAngularDirectiveProperties = (
     name: string
 ): ClassProperties | undefined =>
-    // eslint-disable-next-line no-undef
+    // eslint-disable-next-line
     (window as any).STORYBOOK_ANGULAR_ARG_TYPES[name];
 
 const mapPropToArgsTableProp = (
@@ -23,7 +23,7 @@ const mapPropToArgsTableProp = (
         defaultValue: {
             summary: prop.defaultValue,
             detail: undefined, // 'defailtValueDetail', todo show details for interfaces and types
-            required: false, // todo wait for 'required' field
+            required: prop.required,
         },
         category: category,
         jsDocTags: {
@@ -35,7 +35,7 @@ const mapPropToArgsTableProp = (
         },
         type: {
             summary: prop.type,
-            required: false,
+            required: prop.required,
             detail: undefined, // "type detail", todo wait for type details for interfaces and types
         },
     },

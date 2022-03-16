@@ -5,6 +5,7 @@ export interface Property {
     description: string;
     // TODO what about non-primitive types, should they be expanded so they are actually useful?
     type: string;
+    required: boolean;
 }
 
 export const Categories = [
