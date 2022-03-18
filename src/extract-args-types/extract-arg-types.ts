@@ -23,27 +23,26 @@ const mapPropToArgsTableProp = (
     prop: Property,
     category: string
 ): ExtendedArgType => ({
-    name: prop.name,
+    name: prop.alias || prop.name,
     description: prop.description,
     defaultValue: prop.defaultValue,
     table: {
         defaultValue: {
-            summary: prop.defaultValue,
-            detail: undefined, // 'defailtValueDetail', todo show details for interfaces and types
+            summary: prop.defaultValue || "---",
             required: prop.required,
         },
         category: category,
         jsDocTags: {
             // todo wait for 'jsDocTags' field
-            // params: [{name: 'jsDocTagParamName', description: 'JsDocTagParamDescription'}],
-            // returns: {
-            //     description: 'jsdocTagReturn'
-            // }
+            /*params: [{name: 'jsDocTagParamName', description: 'JsDocTagParamDescription'}],
+            returns: {
+                description: 'jsdocTagReturn'
+            }*/
         },
         type: {
             summary: prop.type,
             required: prop.required,
-            detail: undefined, // "type detail", todo wait for type details for interfaces and types
+            detail: prop.typeDetails,
         },
     },
 });

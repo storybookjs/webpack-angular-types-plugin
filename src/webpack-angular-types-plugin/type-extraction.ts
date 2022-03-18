@@ -1,14 +1,27 @@
 import {
     ClassDeclaration,
     DecoratableNode,
+    GetAccessorDeclaration,
     JSDocableNode,
+    MethodDeclaration,
     Project,
     PropertyDeclaration,
     SetAccessorDeclaration,
     SourceFile,
     Type,
 } from "ts-morph";
-import { ClassInformation, ClassProperties, Property } from "../types";
+import {
+    ClassInformation,
+    ClassProperties,
+    Property,
+    TypeDetail,
+} from "../types";
+import {
+    generateUUID,
+    stripQuotes,
+    wrapInBraces,
+    wrapInCurlyBraces,
+} from "../utils";
 
 function extractComponentOrDirectiveAnnotatedClasses(
     sourceFile: SourceFile
@@ -41,7 +54,7 @@ function retrieveInputOutputDecoratorAlias(
                 .getDecorator(decoratorToCheck)
                 ?.getArguments();
             if (decoratorArgs && decoratorArgs.length === 1) {
-                return decoratorArgs[0].getText();
+                return stripQuotes(decoratorArgs[0].getText());
             }
         }
     }
@@ -57,15 +70,123 @@ function getJsDocs(node: JSDocableNode): string {
     );
 }
 
-function typeToString(type: Type): string {
-    // TODO this needs to be refined. for example for event emitter import("...").EventEmitter<T>
-    //      is printed by getText. I guess we need to follow the type here to resolve it to something useful
-    const typeStr = type.getApparentType().getText();
-    const lastIndexOfDot = typeStr.lastIndexOf(".");
-    if (lastIndexOfDot > -1) {
-        return typeStr.slice(lastIndexOfDot + 1);
+function truncateImportPart(typeStr: string): string {
+    const regex = /import\(.+\)\./g;
+    return typeStr.replace(regex, "");
+}
+
+function expandTypeToString(type: Type, level = 0): string {
+    if (type.isUnion() || type.isIntersection()) {
+        const types = type.isUnion()
+            ? type.getUnionTypes()
+            : type.getIntersectionTypes();
+        const joinSymbol = type.isUnion() ? " | " : " & ";
+        const res = types
+            .map((t) => expandTypeToString(t, level + 1))
+            .join(joinSymbol);
+        return level > 0 ? wrapInBraces(res) : res;
+        // interfaces are only expanded on the root level, and if interfaces should be expanded
+    } else if (type.isInterface() && level === 0) {
+        const res: string[] = [];
+        for (const property of type.getProperties()) {
+            const propName = property.getName();
+            const propType = property.getValueDeclarationOrThrow().getType();
+            res.push(`  ${propName}: ${expandTypeToString(propType, level)};`);
+        }
+        return wrapInCurlyBraces(res.join("\n"));
+    } else if (type.getStringIndexType() || type.getNumberIndexType()) {
+        return truncateImportPart(type.getText());
+    } else {
+        return truncateImportPart(type.getText());
     }
-    return typeStr;
+}
+
+function typeToString(type: Type): string {
+    return truncateImportPart(type.getText());
+}
+
+function tryGenerateTypeDetailCollectionForIndexType(
+    type: Type,
+    typeDetailCollection: Map<string, TypeDetail>
+): Map<string, TypeDetail> {
+    const numberIndexType = type.getNumberIndexType();
+    const stringIndexType = type.getStringIndexType();
+    if (numberIndexType) {
+        return generateTypeDetailCollection(
+            numberIndexType,
+            typeDetailCollection
+        );
+    }
+    if (stringIndexType) {
+        return generateTypeDetailCollection(
+            stringIndexType,
+            typeDetailCollection
+        );
+    }
+    return typeDetailCollection;
+}
+
+function generateTypeDetailCollection(
+    type: Type,
+    typeDetailCollection: Map<string, TypeDetail>
+): Map<string, TypeDetail> {
+    // Type is already collected for this typeDetail
+    if (typeDetailCollection.has(type.getText())) {
+        return typeDetailCollection;
+    }
+
+    if (type.isInterface()) {
+        const typeDetail: TypeDetail = {
+            type: "interface",
+            detailString: expandTypeToString(type, 0),
+        };
+        typeDetailCollection.set(typeToString(type), typeDetail);
+    }
+
+    if (type.isInterface() || (type.isObject() && type.isAnonymous())) {
+        for (const property of type.getProperties()) {
+            generateTypeDetailCollection(
+                property.getValueDeclarationOrThrow().getType(),
+                typeDetailCollection
+            );
+        }
+        tryGenerateTypeDetailCollectionForIndexType(type, typeDetailCollection);
+    }
+
+    if (type.isUnion() || type.isIntersection()) {
+        if (type.getAliasSymbol()) {
+            const typeDetail: TypeDetail = {
+                type: "type",
+                detailString: expandTypeToString(type),
+            };
+            typeDetailCollection.set(typeToString(type), typeDetail);
+        }
+        const types = type.isUnion()
+            ? type.getUnionTypes()
+            : type.getIntersectionTypes();
+        types.forEach((t) =>
+            generateTypeDetailCollection(t, typeDetailCollection)
+        );
+    }
+
+    return typeDetailCollection;
+}
+
+function stringifyTypeDetailCollection(
+    typeDetailCollection: Map<string, TypeDetail>
+): string | undefined {
+    if (typeDetailCollection.size === 0) {
+        return undefined;
+    }
+    let result = "";
+    for (const [key, value] of typeDetailCollection.entries()) {
+        if (value.type === "type") {
+            result += `type ${key} = ${value.detailString};\n\n`;
+        } else {
+            result += `${value.type} ${key} ${value.detailString}\n\n`;
+        }
+    }
+    return result;
 }
 
 function isTypeRequired(type: Type): boolean {
@@ -86,9 +207,15 @@ function mapProperty(property: PropertyDeclaration): Property {
     return {
         alias: retrieveInputOutputDecoratorAlias(property),
         name: property.getName(),
-        defaultValue: property.getInitializer()?.getText() || "",
+        defaultValue: property.getInitializer()?.getText(),
         description: getJsDocs(property),
         type: typeToString(property.getType()),
+        typeDetails: stringifyTypeDetailCollection(
+            generateTypeDetailCollection(
+                property.getType(),
+                new Map<string, TypeDetail>()
+            )
+        ),
         required: isTypeRequired(property.getType()),
     };
 }
@@ -102,35 +229,78 @@ function mapSetAccessor(setAccessor: SetAccessorDeclaration): Property {
     return {
         alias: retrieveInputOutputDecoratorAlias(setAccessor),
         name: setAccessor.getName(),
-        // Set accessors can not have a default value
-        defaultValue: "",
+        // accessors can not have a default value
+        defaultValue: undefined,
         description: getJsDocs(setAccessor),
         type: typeToString(parameter.getType()),
+        typeDetails: stringifyTypeDetailCollection(
+            generateTypeDetailCollection(
+                parameter.getType(),
+                new Map<string, TypeDetail>()
+            )
+        ),
         required: isTypeRequired(parameter.getType()),
     };
 }
 
-function getClassProperties(
-    classDeclaration: ClassDeclaration
-): ClassProperties {
+function mapGetAccessor(getAccessor: GetAccessorDeclaration): Property {
+    return {
+        alias: retrieveInputOutputDecoratorAlias(getAccessor),
+        name: getAccessor.getName(),
+        // accessors can not have a default value
+        defaultValue: undefined,
+        description: getJsDocs(getAccessor),
+        type: typeToString(getAccessor.getType()),
+        typeDetails: stringifyTypeDetailCollection(
+            generateTypeDetailCollection(
+                getAccessor.getType(),
+                new Map<string, TypeDetail>()
+            )
+        ),
+        required: false,
+    };
+}
+
+// TODO implement method mapping
+function mapMethod(method: MethodDeclaration): Property {
+    return {} as Property;
+}
+
+function getClassMembers(classDeclaration: ClassDeclaration): ClassProperties {
     const properties = classDeclaration.getProperties();
     const setters = classDeclaration.getSetAccessors();
+    const getters = classDeclaration.getGetAccessors();
+    const methods = classDeclaration
+        .getMethods()
+        .filter((method) => !method.getText().startsWith("_"));
 
     const inputs = [];
     const outputs = [];
     const propertiesWithoutDecorators = [];
+    const componentMethods = [];
 
-    for (const declaration of [...properties, ...setters]) {
+    for (const declaration of [
+        ...properties,
+        ...setters,
+        ...getters,
+        ...methods,
+    ]) {
         let prop: Property;
         if (declaration instanceof PropertyDeclaration) {
             prop = mapProperty(declaration);
-        } else {
+        } else if (declaration instanceof SetAccessorDeclaration) {
             prop = mapSetAccessor(declaration);
+        } else if (declaration instanceof GetAccessorDeclaration) {
+            prop = mapGetAccessor(declaration);
+        } else {
+            prop = mapMethod(declaration);
         }
         if (declaration.getDecorator("Input")) {
             inputs.push(prop);
         } else if (declaration.getDecorator("Output")) {
             outputs.push(prop);
+        } else if (declaration instanceof MethodDeclaration) {
+            componentMethods.push(prop);
         } else {
             propertiesWithoutDecorators.push(prop);
         }
@@ -226,7 +396,7 @@ export function generateClassInformation(
     for (const classDeclaration of annotatedClassDeclarations) {
         const baseClasses = collectBaseClasses(classDeclaration);
         const properties = [classDeclaration, ...baseClasses].map((bc) =>
-            getClassProperties(bc)
+            getClassMembers(bc)
         );
         const mergedProperties = mergeProperties(properties);
         const name = classDeclaration.getName();
@@ -239,6 +409,7 @@ export function generateClassInformation(
             name,
             modulePath: filepath,
             properties: mergedProperties,
+            uuid: generateUUID(),
         });
     }
     return result;

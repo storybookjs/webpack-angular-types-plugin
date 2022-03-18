@@ -1,6 +1,7 @@
 import { Project } from "ts-morph";
 import { Compiler, Module } from "webpack";
 import { getComponentArgCodeBlock } from "./component-arg-block-code-template";
+import { getPrototypeUUIDCodeBlock } from "./component-uuid-template";
 import { generateClassInformation } from "./type-extraction";
 import { ClassInformation } from "../types";
 import {
