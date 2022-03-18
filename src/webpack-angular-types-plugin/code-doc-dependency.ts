@@ -1,7 +1,10 @@
 import { Dependency } from "webpack";
 
 export class CodeDocDependency extends Dependency {
-    constructor(public codeDocInstructions: string) {
+    constructor(
+        public codeDocInstructions: string,
+        public uuidCodeBlock: string
+    ) {
         super();
     }
     // eslint-disable-next-line
@@ -14,6 +17,7 @@ export class CodeDocDependencyTemplate {
     // eslint-disable-next-line
     apply(myDep: CodeDocDependency, source: any) {
         if (myDep.codeDocInstructions) {
+            source.insert(Infinity, myDep.uuidCodeBlock);
             source.insert(Infinity, myDep.codeDocInstructions);
         }
     }

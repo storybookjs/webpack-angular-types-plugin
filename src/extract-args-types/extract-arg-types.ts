@@ -1,5 +1,8 @@
 import { ArgType, TableAnnotation } from "@storybook/components";
-import { STORYBOOK_ANGULAR_ARG_TYPES } from "../constants";
+import {
+    STORYBOOK_ANGULAR_ARG_TYPES,
+    STORYBOOK_COMPONENT_UUID,
+} from "../constants";
 import { ClassProperties, Property } from "../types";
 
 // See https://github.com/storybookjs/storybook/blob/f4b3a880e7f00bd1b28e7691d45bcc1c41b1cafe/lib/components/src/blocks/ArgsTable/types.ts
@@ -7,11 +10,14 @@ interface ExtendedArgType extends ArgType {
     table: TableAnnotation;
 }
 
+type DirectiveType<TDirective> = new (...args: unknown[]) => TDirective;
+
 const getAngularDirectiveProperties = (
-    name: string
-): ClassProperties | undefined =>
+    uuid: string
+): ClassProperties | undefined => {
     // eslint-disable-next-line
-    (window as any)[STORYBOOK_ANGULAR_ARG_TYPES][name];
+    return (window as any)[STORYBOOK_ANGULAR_ARG_TYPES][uuid];
+};
 
 const mapPropToArgsTableProp = (
     prop: Property,
@@ -58,10 +64,12 @@ const mapPropsToArgsTableProps = (
     return argsTableProps;
 };
 
-export const extractArgTypes = (directive: {
-    name: string;
-}): ArgType[] | undefined => {
-    const props = getAngularDirectiveProperties(directive.name);
+export const extractArgTypes = <TDirective>(
+    directive: DirectiveType<TDirective>
+): ArgType[] | undefined => {
+    const props = getAngularDirectiveProperties(
+        directive.prototype[STORYBOOK_COMPONENT_UUID]
+    );
     if (!props) {
         return;
     }

@@ -34,7 +34,11 @@ export class WebpackAngularTypesPlugin {
                     for (const ci of classInformation) {
                         module.addDependency(
                             new CodeDocDependency(
-                                getComponentArgCodeBlock(ci.name, ci.properties)
+                                getComponentArgCodeBlock(
+                                    ci.uuid,
+                                    ci.properties
+                                ),
+                                getPrototypeUUIDCodeBlock(ci.name, ci.uuid)
                             )
                         );
                     }
