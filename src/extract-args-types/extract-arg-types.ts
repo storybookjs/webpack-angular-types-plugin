@@ -1,7 +1,7 @@
 import { ArgType, TableAnnotation } from "@storybook/components";
 import {
     STORYBOOK_ANGULAR_ARG_TYPES,
-    STORYBOOK_COMPONENT_UUID,
+    STORYBOOK_COMPONENT_ID,
 } from "../constants";
 import { ClassProperties, Property } from "../types";
 
@@ -67,7 +67,7 @@ export const extractArgTypes = <TDirective>(
     directive: DirectiveType<TDirective>
 ): ArgType[] | undefined => {
     const props = getAngularDirectiveProperties(
-        directive.prototype[STORYBOOK_COMPONENT_UUID]
+        directive.prototype[STORYBOOK_COMPONENT_ID]
     );
     if (!props) {
         return;

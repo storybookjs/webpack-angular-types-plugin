@@ -1,13 +1,13 @@
 import { Project } from "ts-morph";
 import { Compiler, Module } from "webpack";
-import { getComponentArgCodeBlock } from "./component-arg-block-code-template";
-import { getPrototypeUUIDCodeBlock } from "./component-uuid-template";
-import { generateClassInformation } from "./type-extraction";
+import { getComponentArgCodeBlock } from "./templating/component-arg-block-code-template";
+import { getPrototypeUUIDCodeBlock } from "./templating/component-uuid-template";
+import { generateClassInformation } from "./type-extraction/type-extraction";
 import { ClassInformation } from "../types";
 import {
     CodeDocDependency,
     CodeDocDependencyTemplate,
-} from "./code-doc-dependency";
+} from "./templating/code-doc-dependency";
 
 export class WebpackAngularTypesPlugin {
     apply(compiler: Compiler) {

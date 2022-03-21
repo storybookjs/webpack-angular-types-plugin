@@ -27,6 +27,10 @@ export interface ClassInformation {
 }
 
 export interface TypeDetail {
-    type: "type" | "interface" | "class";
+    type: TypeKind;
     detailString: string;
 }
+
+export type TypeDetailCollection = Map<string, TypeDetail>;
+
+export type TypeKind = "interface" | "type" | "class";

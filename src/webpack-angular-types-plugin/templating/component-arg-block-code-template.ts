@@ -1,4 +1,4 @@
-import { STORYBOOK_ANGULAR_ARG_TYPES } from "../constants";
+import { STORYBOOK_ANGULAR_ARG_TYPES } from "../../constants";
 
 export function getComponentArgCodeBlock(uuid: string, types: object) {
     return `
