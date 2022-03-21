@@ -1,7 +1,7 @@
 import { Project } from "ts-morph";
 import { Compiler, Module } from "webpack";
 import { getComponentArgCodeBlock } from "./templating/component-arg-block-code-template";
-import { getPrototypeUUIDCodeBlock } from "./templating/component-uuid-template";
+import { getPrototypeComponentIDCodeBlock } from "./templating/component-global-id-template";
 import { generateClassInformation } from "./type-extraction/type-extraction";
 import { ClassInformation } from "../types";
 import {
@@ -36,10 +36,11 @@ export class WebpackAngularTypesPlugin {
                         module.addDependency(
                             new CodeDocDependency(
                                 getComponentArgCodeBlock(
-                                    ci.uuid,
+                                    ci.name,
+                                    ci.id,
                                     ci.properties
                                 ),
-                                getPrototypeUUIDCodeBlock(ci.name, ci.uuid)
+                                getPrototypeComponentIDCodeBlock(ci.name, ci.id)
                             )
                         );
                     }

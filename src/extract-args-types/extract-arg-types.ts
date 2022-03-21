@@ -13,10 +13,10 @@ interface ExtendedArgType extends ArgType {
 type DirectiveType<TDirective> = new (...args: unknown[]) => TDirective;
 
 const getAngularDirectiveProperties = (
-    uuid: string
+    componentId: string
 ): ClassProperties | undefined => {
     // eslint-disable-next-line
-    return (window as any)[STORYBOOK_ANGULAR_ARG_TYPES][uuid];
+    return (window as any)[STORYBOOK_ANGULAR_ARG_TYPES][componentId];
 };
 
 const mapPropToArgsTableProp = (

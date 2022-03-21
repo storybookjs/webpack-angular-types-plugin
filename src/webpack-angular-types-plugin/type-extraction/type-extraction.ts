@@ -2,12 +2,14 @@ import {
     ClassDeclaration,
     GetAccessorDeclaration,
     MethodDeclaration,
+    printNode,
     Project,
     PropertyDeclaration,
     SetAccessorDeclaration,
 } from "ts-morph";
 import { ClassInformation, ClassProperties, Property } from "../../types";
-import { generateUUID, removeFromMapIfExists } from "../utils";
+import { getId } from "../global-id-count";
+import { removeFromMapIfExists } from "../utils";
 import {
     collectBaseClasses,
     extractComponentOrDirectiveAnnotatedClasses,
@@ -156,7 +158,7 @@ export function generateClassInformation(
             name,
             modulePath: filepath,
             properties: mergedProperties,
-            uuid: generateUUID(),
+            id: getId(),
         });
     }
     return result;

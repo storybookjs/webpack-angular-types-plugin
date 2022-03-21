@@ -1,5 +1,3 @@
-import { v4 } from "uuid";
-
 /*
  * Removes "key" from "map" if the key exists
  */
@@ -10,10 +8,6 @@ export function removeFromMapIfExists<TKey, TVal>(
     if (map.has(key)) {
         map.delete(key);
     }
-}
-
-export function generateUUID(): string {
-    return v4();
 }
 
 /*
@@ -29,4 +23,11 @@ export function wrapInBraces(input: string): string {
 
 export function wrapInCurlyBraces(input: string): string {
     return "{\n" + input + "\n}";
+}
+
+export function componentWithIdString(
+    componentName: string,
+    id: number
+): string {
+    return `${componentName}-${id}`;
 }

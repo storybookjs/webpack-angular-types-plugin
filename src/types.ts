@@ -23,7 +23,7 @@ export interface ClassInformation {
     name: string;
     modulePath: string;
     properties: ClassProperties;
-    uuid: string;
+    id: number;
 }
 
 export interface TypeDetail {
