@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "A webpack plugin that adds type information to angular classes. The information can be consumed by @storybook/addon-docs.",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "private": false,
   "scripts": {
     "build": "tsc",
@@ -10,6 +11,7 @@
     "lint": "yarn run eslint . --ext .js,.jsx,.ts,.tsx",
     "test": "jest",
     "prepare": "husky install",
+    "prepublish": "yarn build",
     "postinstall": "cd src/test/angular-app && yarn"
   },
   "lint-staged": {
