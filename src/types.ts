@@ -1,10 +1,12 @@
 export interface Property {
     name: string;
     alias?: string;
-    defaultValue: string;
+    defaultValue?: string;
     description: string;
     // TODO what about non-primitive types, should they be expanded so they are actually useful?
     type: string;
+    typeDetails?: string;
+    required: boolean;
 }
 
 export const Categories = [
@@ -21,4 +23,14 @@ export interface ClassInformation {
     name: string;
     modulePath: string;
     properties: ClassProperties;
+    id: number;
 }
+
+export interface TypeDetail {
+    type: TypeKind;
+    detailString: string;
+}
+
+export type TypeDetailCollection = Map<string, TypeDetail>;
+
+export type TypeKind = "interface" | "type" | "class";

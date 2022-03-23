@@ -1,120 +1,62 @@
 import {
     ClassDeclaration,
-    DecoratableNode,
-    JSDocableNode,
+    GetAccessorDeclaration,
+    MethodDeclaration,
     Project,
     PropertyDeclaration,
     SetAccessorDeclaration,
-    SourceFile,
-    Type,
 } from "ts-morph";
-import { ClassInformation, ClassProperties, Property } from "../types";
+import { ClassInformation, ClassProperties, Property } from "../../types";
+import { nextGlobalUniqueId } from "../global-id-count";
+import { removeFromMapIfExists } from "../utils";
+import {
+    collectBaseClasses,
+    extractComponentOrDirectiveAnnotatedClasses,
+} from "./ast-utils";
+import {
+    mapGetAccessor,
+    mapMethod,
+    mapProperty,
+    mapSetAccessor,
+} from "./declaration-mappers";
 
-function extractComponentOrDirectiveAnnotatedClasses(
-    sourceFile: SourceFile
-): ClassDeclaration[] {
-    return sourceFile
-        .getClasses()
-        .filter(
-            (classDeclaration: ClassDeclaration) =>
-                !!(
-                    classDeclaration.getDecorator("Component") ||
-                    classDeclaration.getDecorator("Directive")
-                )
-        )
-        .filter(
-            (classDeclaration: ClassDeclaration) =>
-                !classDeclaration.isAbstract()
-        )
-        .reduce(
-            (acc: ClassDeclaration[], val: ClassDeclaration) => acc.concat(val),
-            []
-        );
-}
-
-function retrieveInputOutputDecoratorAlias(
-    node: DecoratableNode
-): string | undefined {
-    for (const decoratorToCheck of ["Input", "Output"]) {
-        if (node.getDecorator(decoratorToCheck)) {
-            const decoratorArgs = node
-                .getDecorator(decoratorToCheck)
-                ?.getArguments();
-            if (decoratorArgs && decoratorArgs.length === 1) {
-                return decoratorArgs[0].getText();
-            }
-        }
-    }
-    return undefined;
-}
-
-function getJsDocs(node: JSDocableNode): string {
-    return (
-        node
-            .getJsDocs()
-            .map((doc) => doc.getCommentText())
-            .join("\n") || ""
-    );
-}
-
-function typeToString(type: Type): string {
-    // TODO this needs to be refined. for example for event emitter import("...").EventEmitter<T>
-    //      is printed by getText. I guess we need to follow the type here to resolve it to something useful
-    const typeStr = type.getApparentType().getText();
-    const lastIndexOfDot = typeStr.lastIndexOf(".");
-    if (lastIndexOfDot > -1) {
-        return typeStr.slice(lastIndexOfDot + 1);
-    }
-    return typeStr;
-}
-
-function mapProperty(property: PropertyDeclaration): Property {
-    return {
-        alias: retrieveInputOutputDecoratorAlias(property),
-        name: property.getName(),
-        defaultValue: property.getInitializer()?.getText() || "",
-        description: getJsDocs(property),
-        type: typeToString(property.getType()),
-    };
-}
-
-function mapSetAccessor(setAccessor: SetAccessorDeclaration): Property {
-    const parameters = setAccessor.getParameters();
-    const parameter = parameters.length === 1 ? parameters[0] : undefined;
-    if (!parameter) {
-        throw new Error("Invalid number of arguments for set accessor.");
-    }
-    return {
-        alias: retrieveInputOutputDecoratorAlias(setAccessor),
-        name: setAccessor.getName(),
-        // Set accessors can not have a default value
-        defaultValue: "",
-        description: getJsDocs(setAccessor),
-        type: typeToString(parameter.getType()),
-    };
-}
-
-function getClassProperties(
-    classDeclaration: ClassDeclaration
-): ClassProperties {
+/*
+ * Collects all class members (properties, getters, setters, methods) of a classDeclaration
+ * and sorts them into categories (inputs, outputs, normal properties, public methods etc...)
+ */
+function getClassMembers(classDeclaration: ClassDeclaration): ClassProperties {
     const properties = classDeclaration.getProperties();
     const setters = classDeclaration.getSetAccessors();
+    const getters = classDeclaration.getGetAccessors();
+    const methods = classDeclaration.getMethods();
 
     const inputs = [];
     const outputs = [];
     const propertiesWithoutDecorators = [];
+    const publicMethods = [];
 
-    for (const declaration of [...properties, ...setters]) {
+    for (const declaration of [
+        ...properties,
+        ...setters,
+        ...getters,
+        ...methods,
+    ]) {
         let prop: Property;
         if (declaration instanceof PropertyDeclaration) {
             prop = mapProperty(declaration);
-        } else {
+        } else if (declaration instanceof SetAccessorDeclaration) {
             prop = mapSetAccessor(declaration);
+        } else if (declaration instanceof GetAccessorDeclaration) {
+            prop = mapGetAccessor(declaration);
+        } else {
+            prop = mapMethod(declaration);
         }
         if (declaration.getDecorator("Input")) {
             inputs.push(prop);
         } else if (declaration.getDecorator("Output")) {
             outputs.push(prop);
+        } else if (declaration instanceof MethodDeclaration) {
+            publicMethods.push(prop);
         } else {
             propertiesWithoutDecorators.push(prop);
         }
@@ -123,15 +65,11 @@ function getClassProperties(
     return { inputs, outputs, propertiesWithoutDecorators };
 }
 
-export function removeFromMapIfExists<TKey, TVal>(
-    map: Map<TKey, TVal>,
-    key: TKey
-): void {
-    if (map.has(key)) {
-        map.delete(key);
-    }
-}
-
+/*
+ * Merges an array of class properties. Convention: Class properties are provided
+ * in decreasing priority, i.e. fields from class properties at the end of the input
+ * array are overridden by class properties on a lower index on the input array.
+ */
 export function mergeProperties(
     properties: ClassProperties[]
 ): ClassProperties {
@@ -186,16 +124,10 @@ export function mergeProperties(
     };
 }
 
-export function collectBaseClasses(cls: ClassDeclaration): ClassDeclaration[] {
-    const bases: ClassDeclaration[] = [];
-    let currentClass = cls.getBaseClass();
-    while (currentClass) {
-        bases.push(currentClass);
-        currentClass = currentClass.getBaseClass();
-    }
-    return bases;
-}
-
+/*
+ * Given a sourceFile and a typescript-project, collect class information for
+ * all angular-related (component/directive) classes
+ */
 export function generateClassInformation(
     filepath: string,
     project: Project
@@ -210,7 +142,7 @@ export function generateClassInformation(
     for (const classDeclaration of annotatedClassDeclarations) {
         const baseClasses = collectBaseClasses(classDeclaration);
         const properties = [classDeclaration, ...baseClasses].map((bc) =>
-            getClassProperties(bc)
+            getClassMembers(bc)
         );
         const mergedProperties = mergeProperties(properties);
         const name = classDeclaration.getName();
@@ -223,6 +155,7 @@ export function generateClassInformation(
             name,
             modulePath: filepath,
             properties: mergedProperties,
+            id: nextGlobalUniqueId(),
         });
     }
     return result;

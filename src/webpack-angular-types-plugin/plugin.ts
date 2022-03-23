@@ -1,12 +1,13 @@
 import { Project } from "ts-morph";
 import { Compiler, Module } from "webpack";
-import { getComponentArgCodeBlock } from "./component-arg-block-code-template";
-import { generateClassInformation } from "./type-extraction";
+import { getComponentArgCodeBlock } from "./templating/component-arg-block-code-template";
+import { getPrototypeComponentIDCodeBlock } from "./templating/component-global-id-template";
+import { generateClassInformation } from "./type-extraction/type-extraction";
 import { ClassInformation } from "../types";
 import {
     CodeDocDependency,
     CodeDocDependencyTemplate,
-} from "./code-doc-dependency";
+} from "./templating/code-doc-dependency";
 
 export class WebpackAngularTypesPlugin {
     apply(compiler: Compiler) {
@@ -34,7 +35,12 @@ export class WebpackAngularTypesPlugin {
                     for (const ci of classInformation) {
                         module.addDependency(
                             new CodeDocDependency(
-                                getComponentArgCodeBlock(ci.name, ci.properties)
+                                getComponentArgCodeBlock(
+                                    ci.name,
+                                    ci.id,
+                                    ci.properties
+                                ),
+                                getPrototypeComponentIDCodeBlock(ci.name, ci.id)
                             )
                         );
                     }

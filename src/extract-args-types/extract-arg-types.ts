@@ -1,4 +1,8 @@
 import { ArgType, TableAnnotation } from "@storybook/components";
+import {
+    STORYBOOK_ANGULAR_ARG_TYPES,
+    STORYBOOK_COMPONENT_ID,
+} from "../constants";
 import { ClassProperties, Property } from "../types";
 
 // See https://github.com/storybookjs/storybook/blob/f4b3a880e7f00bd1b28e7691d45bcc1c41b1cafe/lib/components/src/blocks/ArgsTable/types.ts
@@ -6,37 +10,39 @@ interface ExtendedArgType extends ArgType {
     table: TableAnnotation;
 }
 
+type DirectiveType<TDirective> = new (...args: unknown[]) => TDirective;
+
 const getAngularDirectiveProperties = (
-    name: string
-): ClassProperties | undefined =>
-    // eslint-disable-next-line no-undef
-    (window as any).STORYBOOK_ANGULAR_ARG_TYPES[name];
+    componentId: string
+): ClassProperties | undefined => {
+    // eslint-disable-next-line
+    return (window as any)[STORYBOOK_ANGULAR_ARG_TYPES][componentId];
+};
 
 const mapPropToArgsTableProp = (
     prop: Property,
     category: string
 ): ExtendedArgType => ({
-    name: prop.name,
+    name: prop.alias || prop.name,
     description: prop.description,
     defaultValue: prop.defaultValue,
     table: {
         defaultValue: {
-            summary: prop.defaultValue,
-            detail: undefined, // 'defailtValueDetail', todo show details for interfaces and types
-            required: false, // todo wait for 'required' field
+            summary: prop.defaultValue || "---",
+            required: prop.required,
         },
         category: category,
         jsDocTags: {
             // todo wait for 'jsDocTags' field
-            // params: [{name: 'jsDocTagParamName', description: 'JsDocTagParamDescription'}],
-            // returns: {
-            //     description: 'jsdocTagReturn'
-            // }
+            /*params: [{name: 'jsDocTagParamName', description: 'JsDocTagParamDescription'}],
+            returns: {
+                description: 'jsdocTagReturn'
+            }*/
         },
         type: {
             summary: prop.type,
-            required: false,
-            detail: undefined, // "type detail", todo wait for type details for interfaces and types
+            required: prop.required,
+            detail: prop.typeDetails,
         },
     },
 });
@@ -57,10 +63,12 @@ const mapPropsToArgsTableProps = (
     return argsTableProps;
 };
 
-export const extractArgTypes = (directive: {
-    name: string;
-}): ArgType[] | undefined => {
-    const props = getAngularDirectiveProperties(directive.name);
+export const extractArgTypes = <TDirective>(
+    directive: DirectiveType<TDirective>
+): ArgType[] | undefined => {
+    const props = getAngularDirectiveProperties(
+        directive.prototype[STORYBOOK_COMPONENT_ID]
+    );
     if (!props) {
         return;
     }
