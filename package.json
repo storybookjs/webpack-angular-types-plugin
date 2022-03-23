@@ -11,8 +11,7 @@
     "lint": "yarn run eslint . --ext .js,.jsx,.ts,.tsx",
     "test": "jest",
     "prepare": "husky install",
-    "prepublish": "yarn build",
-    "postinstall": "cd src/test/angular-app && yarn"
+    "prepublish": "yarn build"
   },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown",
