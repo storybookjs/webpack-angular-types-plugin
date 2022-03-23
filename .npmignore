@@ -1,0 +1,16 @@
+*.ts
+!*.d.ts
+**/test
+
+# for WebStorm
+.idea/
+
+# misc
+.husky
+.gitignore
+.editorconfig
+.eslintignore
+.eslintrc.json
+.prettierignore
+.prettierrc.json
+tsconfig.json
