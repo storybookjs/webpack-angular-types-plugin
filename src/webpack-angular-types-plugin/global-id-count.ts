@@ -1,5 +1,5 @@
 let counter = 0;
 
-export function getId() {
+export function nextGlobalUniqueId() {
     return ++counter;
 }

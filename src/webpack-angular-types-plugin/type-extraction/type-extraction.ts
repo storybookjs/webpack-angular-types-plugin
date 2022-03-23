@@ -2,13 +2,12 @@ import {
     ClassDeclaration,
     GetAccessorDeclaration,
     MethodDeclaration,
-    printNode,
     Project,
     PropertyDeclaration,
     SetAccessorDeclaration,
 } from "ts-morph";
 import { ClassInformation, ClassProperties, Property } from "../../types";
-import { getId } from "../global-id-count";
+import { nextGlobalUniqueId } from "../global-id-count";
 import { removeFromMapIfExists } from "../utils";
 import {
     collectBaseClasses,
@@ -29,9 +28,7 @@ function getClassMembers(classDeclaration: ClassDeclaration): ClassProperties {
     const properties = classDeclaration.getProperties();
     const setters = classDeclaration.getSetAccessors();
     const getters = classDeclaration.getGetAccessors();
-    const methods = classDeclaration
-        .getMethods()
-        .filter((method) => !method.getText().startsWith("_"));
+    const methods = classDeclaration.getMethods();
 
     const inputs = [];
     const outputs = [];
@@ -158,7 +155,7 @@ export function generateClassInformation(
             name,
             modulePath: filepath,
             properties: mergedProperties,
-            id: getId(),
+            id: nextGlobalUniqueId(),
         });
     }
     return result;
