@@ -8,5 +8,5 @@ export function getPrototypeComponentIDCodeBlock(
     return `${className}.prototype["${STORYBOOK_COMPONENT_ID}"] = "${componentWithIdString(
         className,
         id
-    )}"`;
+    )}";`;
 }
