@@ -14,6 +14,8 @@ export class CodeDocDependency extends Dependency {
         super();
     }
 
+    // TODO is this hash needed? Initially it did not work without it, but at
+    //      the moment, it seems to work fine
     // eslint-disable-next-line
     /*updateHash(hash: any) {
         hash.update(this.className);
@@ -29,10 +31,6 @@ export class CodeDocDependencyTemplate {
         const commentEndStr = CodeDocDependencyTemplate.constructCommentEnd(
             myDep.className
         );
-        /*const sourceStr = (source.source().toString() as string);
-        const startIndex = sourceStr.indexOf(commentStartStr);
-        const endIndexFirstCharacter = sourceStr.indexOf(commentEndStr);
-        const endIndex = endIndexFirstCharacter + commentEndStr.length + 1;*/
         const insertion = CodeDocDependencyTemplate.getInsertion(
             commentStartStr,
             commentEndStr,
