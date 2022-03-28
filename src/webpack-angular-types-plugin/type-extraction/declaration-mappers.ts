@@ -26,12 +26,12 @@ export function mapProperty(property: PropertyDeclaration): Property {
         defaultValue: property.getInitializer()?.getText(),
         description: getJsDocs(property),
         type: typeToString(property.getType()),
-        typeDetails: stringifyTypeDetailCollection(
+        typeDetails: /*stringifyTypeDetailCollection(
             generateTypeDetailCollection(
                 property.getType(),
                 new Map<string, TypeDetail>()
             )
-        ),
+        ),*/ undefined,
         required: isTypeRequired(property.getType()),
     };
 }
@@ -52,12 +52,12 @@ export function mapSetAccessor(setAccessor: SetAccessorDeclaration): Property {
         defaultValue: undefined,
         description: getJsDocs(setAccessor),
         type: typeToString(parameter.getType()),
-        typeDetails: stringifyTypeDetailCollection(
+        typeDetails: /*stringifyTypeDetailCollection(
             generateTypeDetailCollection(
                 parameter.getType(),
                 new Map<string, TypeDetail>()
             )
-        ),
+        ),*/ undefined,
         required: isTypeRequired(parameter.getType()),
     };
 }
@@ -73,12 +73,12 @@ export function mapGetAccessor(getAccessor: GetAccessorDeclaration): Property {
         defaultValue: undefined,
         description: getJsDocs(getAccessor),
         type: typeToString(getAccessor.getType()),
-        typeDetails: stringifyTypeDetailCollection(
+        typeDetails: /*stringifyTypeDetailCollection(
             generateTypeDetailCollection(
                 getAccessor.getType(),
                 new Map<string, TypeDetail>()
             )
-        ),
+        ),*/ undefined,
         required: false,
     };
 }
