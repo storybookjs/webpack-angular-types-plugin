@@ -7,7 +7,6 @@ import {
     SetAccessorDeclaration,
 } from "ts-morph";
 import { ClassInformation, ClassProperties, Property } from "../../types";
-import { nextGlobalUniqueId } from "../global-id-count";
 import { removeFromMapIfExists } from "../utils";
 import {
     collectBaseClasses,
@@ -155,7 +154,6 @@ export function generateClassInformation(
             name,
             modulePath: filepath,
             properties: mergedProperties,
-            id: nextGlobalUniqueId(),
         });
     }
     return result;

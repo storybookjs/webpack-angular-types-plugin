@@ -1,17 +1,22 @@
 import { Project } from "ts-morph";
 import { Compiler, Module } from "webpack";
-import { getComponentArgCodeBlock } from "./templating/component-arg-block-code-template";
-import { getPrototypeComponentIDCodeBlock } from "./templating/component-global-id-template";
-import { generateClassInformation } from "./type-extraction/type-extraction";
 import { ClassInformation } from "../types";
+import { getGlobalUniqueIdForClass } from "./class-id-registry";
 import {
     CodeDocDependency,
     CodeDocDependencyTemplate,
 } from "./templating/code-doc-dependency";
+import { getComponentArgCodeBlock } from "./templating/component-arg-block-code-template";
+import { getPrototypeComponentIDCodeBlock } from "./templating/component-global-id-template";
+import { generateClassInformation } from "./type-extraction/type-extraction";
 
 export class WebpackAngularTypesPlugin {
     apply(compiler: Compiler) {
         compiler.hooks.compilation.tap("TestPlugin", (compilation) => {
+            compilation.dependencyTemplates.set(
+                CodeDocDependency,
+                new CodeDocDependencyTemplate()
+            );
             compilation.hooks.seal.tap("TestPlugin", () => {
                 // TODO the whole project is created each time the seal hook of the compilation is called
                 //  this is potentially pretty costly since often times only a small subset of the files
@@ -20,10 +25,6 @@ export class WebpackAngularTypesPlugin {
                 const tsProject = new Project({
                     tsConfigFilePath: "./.storybook/tsconfig.json",
                 });
-                compilation.dependencyTemplates.set(
-                    CodeDocDependency,
-                    new CodeDocDependencyTemplate()
-                );
 
                 const modulesToProcess = this.collectModulesToProcess(
                     compilation.modules,
@@ -33,20 +34,26 @@ export class WebpackAngularTypesPlugin {
                     const classInformation: ClassInformation[] =
                         generateClassInformation(name, tsProject);
                     for (const ci of classInformation) {
-                        module.addDependency(
-                            new CodeDocDependency(
-                                getComponentArgCodeBlock(
-                                    ci.name,
-                                    ci.id,
-                                    ci.properties
-                                ),
-                                getPrototypeComponentIDCodeBlock(ci.name, ci.id)
-                            )
-                        );
+                        this.addCodeDocDependencyToClass(ci, module);
                     }
                 }
             });
         });
+    }
+
+    // noinspection JSMethodCanBeStatic
+    private addCodeDocDependencyToClass(
+        ci: ClassInformation,
+        module: Module
+    ): void {
+        const moduleClassId = getGlobalUniqueIdForClass(module.id, ci.name);
+        const codeDocDependency = new CodeDocDependency(
+            ci.name,
+            moduleClassId,
+            getComponentArgCodeBlock(ci.name, moduleClassId, ci.properties),
+            getPrototypeComponentIDCodeBlock(ci.name, moduleClassId)
+        );
+        module.addDependency(codeDocDependency);
     }
 
     // noinspection JSMethodCanBeStatic

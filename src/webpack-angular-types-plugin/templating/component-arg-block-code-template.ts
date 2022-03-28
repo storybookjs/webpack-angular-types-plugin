@@ -6,12 +6,10 @@ export function getComponentArgCodeBlock(
     id: number,
     types: object
 ) {
-    return `
-        if (window["${STORYBOOK_ANGULAR_ARG_TYPES}"] !== undefined) {
-            window["${STORYBOOK_ANGULAR_ARG_TYPES}"]["${componentWithIdString(
+    return `if (window["${STORYBOOK_ANGULAR_ARG_TYPES}"] !== undefined) {
+    window["${STORYBOOK_ANGULAR_ARG_TYPES}"]["${componentWithIdString(
         className,
         id
     )}"] = ${JSON.stringify(types)};
-        }
-`;
+}`;
 }
