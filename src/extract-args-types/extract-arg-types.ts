@@ -28,7 +28,7 @@ const mapPropToArgsTableProp = (
     defaultValue: prop.defaultValue,
     table: {
         defaultValue: {
-            summary: prop.defaultValue || "---",
+            summary: prop.defaultValue || "",
             required: prop.required,
         },
         category: category,

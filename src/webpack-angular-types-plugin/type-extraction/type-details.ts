@@ -84,7 +84,7 @@ export function generateTypeDetailCollection(
     typeDetailCollection: TypeDetailCollection,
     level = 0
 ): TypeDetailCollection {
-    if (level > 2) {
+    if (level > 1) {
         return typeDetailCollection;
     }
     // Type is already collected for this typeDetail
