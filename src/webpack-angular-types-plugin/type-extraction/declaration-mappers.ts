@@ -14,7 +14,7 @@ import {
     generateTypeDetailCollection,
     stringifyTypeDetailCollection,
 } from "./type-details";
-import { typeToString } from "./type-printing";
+import { printType } from "./type-printing";
 
 /*
  * Maps a ts-morph property declaration to our internal Property type
@@ -25,7 +25,7 @@ export function mapProperty(property: PropertyDeclaration): Property {
         name: property.getName(),
         defaultValue: property.getInitializer()?.getText(),
         description: getJsDocs(property),
-        type: typeToString(property.getType()),
+        type: printType(property.getType(), false),
         typeDetails: stringifyTypeDetailCollection(
             generateTypeDetailCollection(
                 property.getType(),
@@ -51,7 +51,7 @@ export function mapSetAccessor(setAccessor: SetAccessorDeclaration): Property {
         // accessors can not have a default value
         defaultValue: undefined,
         description: getJsDocs(setAccessor),
-        type: typeToString(parameter.getType()),
+        type: printType(parameter.getType(), false),
         typeDetails: stringifyTypeDetailCollection(
             generateTypeDetailCollection(
                 parameter.getType(),
@@ -72,7 +72,7 @@ export function mapGetAccessor(getAccessor: GetAccessorDeclaration): Property {
         // accessors can not have a default value
         defaultValue: undefined,
         description: getJsDocs(getAccessor),
-        type: typeToString(getAccessor.getType()),
+        type: printType(getAccessor.getType(), false),
         typeDetails: stringifyTypeDetailCollection(
             generateTypeDetailCollection(
                 getAccessor.getType(),

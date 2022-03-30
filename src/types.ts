@@ -1,3 +1,5 @@
+import { Symbol as tsSymbol } from "ts-morph";
+
 export interface Property {
     name: string;
     alias?: string;
@@ -27,9 +29,11 @@ export interface ClassInformation {
 
 export interface TypeDetail {
     type: TypeKind;
+    typeName: string;
     detailString: string;
 }
 
+export type TsMorphSymbol = tsSymbol;
 export type TypeDetailCollection = Map<string, TypeDetail>;
 
-export type TypeKind = "interface" | "type" | "class";
+export type TypeKind = "interface" | "type" | "class" | "function";
