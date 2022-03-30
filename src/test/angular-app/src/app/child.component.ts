@@ -40,6 +40,10 @@ export class ChildComponent extends ParentDirective {
     numberValue = 10;
     objectValue = {};
 
+    functionValue:
+        | ((p1: string, p2: TestType, p3: NestedInterface) => string)
+        | undefined;
+
     /**
      * Should this render
      *      string | number | boolean | object | undefined;

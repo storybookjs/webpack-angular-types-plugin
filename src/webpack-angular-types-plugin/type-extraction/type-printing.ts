@@ -1,5 +1,6 @@
 import { Type } from "ts-morph";
 import { wrapInBraces, wrapInCurlyBraces } from "../utils";
+import { isFunctionType } from "./type-details";
 
 /*
  * Removes the import("...")-part, which is sometimes included when types are
@@ -10,43 +11,79 @@ function truncateImportPart(typeStr: string): string {
     return typeStr.replace(regex, "");
 }
 
-/*
- * Gets a printable string from a type. In contrast to the typeToString method,
- * the apparent/actual type is generated. Examples: For an interface, the actual
- * members and their types are collected.
- */
-export function typeToExpandedString(type: Type, level = 0): string {
-    if (type.isUnion() || type.isIntersection()) {
-        const types = type.isUnion()
-            ? type.getUnionTypes()
-            : type.getIntersectionTypes();
-        const joinSymbol = type.isUnion() ? " | " : " & ";
-        const res = types
-            .map((t) => typeToExpandedString(t, level + 1))
-            .join(joinSymbol);
-        return level > 0 ? wrapInBraces(res) : res;
-        // interfaces are only expanded on the root level
-    } else if (type.isInterface() && level === 0) {
-        const res: string[] = [];
-        for (const property of type.getProperties()) {
-            const propName = property.getName();
-            const propType = property.getValueDeclarationOrThrow().getType();
-            // the whitespaces at the beginning are for indentation
-            res.push(
-                `  ${propName}: ${typeToExpandedString(propType, level)};`
-            );
-        }
-        return wrapInCurlyBraces(res.join("\n"));
-    } else {
+function printUnionOrIntersection(
+    type: Type,
+    expandType: boolean,
+    level: number
+): string {
+    if (!expandType && type.getAliasSymbol()) {
         return truncateImportPart(type.getText());
     }
+    const types = type.isUnion()
+        ? type.getUnionTypes()
+        : type.getIntersectionTypes();
+    const joinSymbol = type.isUnion() ? " | " : " & ";
+    const res = types
+        .map((t) => printType(t, false, level + 1))
+        .join(joinSymbol);
+    return level > 0 ? wrapInBraces(res) : res;
+}
+
+function printInterface(
+    type: Type,
+    expandType: boolean,
+    level: number
+): string {
+    if (!expandType) {
+        return truncateImportPart(type.getText());
+    }
+    const res: string[] = [];
+    for (const property of type.getProperties()) {
+        const propName = property.getName();
+        const propType = property.getValueDeclarationOrThrow().getType();
+        // the whitespaces at the beginning are for indentation
+        res.push(`  ${propName}: ${printType(propType, false, level + 1)};`);
+    }
+    return wrapInCurlyBraces(res.join("\n"));
+}
+
+function printFunction(type: Type, expandType: boolean, level: number): string {
+    if (!expandType && type.getAliasSymbol()) {
+        return truncateImportPart(type.getText());
+    }
+    const css = type.getCallSignatures();
+    const res: string[] = [];
+    for (const cs of css) {
+        const retTypeString = printType(cs.getReturnType(), false, level + 1);
+        const paramStrings: string[] = [];
+        for (const param of cs.getParameters()) {
+            const paramName = param.getName();
+            const paramType = printType(
+                param.getValueDeclaration()?.getType() ||
+                    param.getDeclaredType(),
+                false,
+                level + 1
+            );
+            const paramString = `${paramName}: ${paramType}`;
+            paramStrings.push(paramString);
+        }
+        const csString = `(${paramStrings.join(", ")}): ${retTypeString};`;
+        res.push(csString);
+    }
+    return res.join("\n");
 }
 
 /*
- * Gets the name of the type as a string. In contrast to typeToExpandedString
- * this method only gets the name/alias-name. E.g. type X = boolean | string
- * will return "X" and not "boolean | string"
+ * Gets a printable string from a type.
  */
-export function typeToString(type: Type): string {
+export function printType(type: Type, expandType: boolean, level = 0): string {
+    if (type.isUnion() || type.isIntersection()) {
+        return printUnionOrIntersection(type, expandType, level);
+        // interfaces are only expanded on the root level
+    } else if (type.isInterface()) {
+        return printInterface(type, expandType, level);
+    } else if (isFunctionType(type)) {
+        return printFunction(type, expandType, level);
+    }
     return truncateImportPart(type.getText());
 }
