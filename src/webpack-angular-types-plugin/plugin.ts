@@ -1,5 +1,6 @@
 import { Project } from "ts-morph";
 import { Compiler, Module } from "webpack";
+import { DEFAULT_TS_CONFIG_PATH, PLUGIN_NAME } from "../constants";
 import { ClassInformation } from "../types";
 import { getGlobalUniqueIdForClass } from "./class-id-registry";
 import {
@@ -12,27 +13,35 @@ import { generateClassInformation } from "./type-extraction/type-extraction";
 
 export class WebpackAngularTypesPlugin {
     apply(compiler: Compiler) {
-        compiler.hooks.compilation.tap("TestPlugin", (compilation) => {
+        const tsProject = new Project({
+            tsConfigFilePath: DEFAULT_TS_CONFIG_PATH,
+            skipLoadingLibFiles: true,
+            skipFileDependencyResolution: true,
+        });
+        compiler.hooks.compilation.tap(PLUGIN_NAME, (compilation) => {
             compilation.dependencyTemplates.set(
                 CodeDocDependency,
                 new CodeDocDependencyTemplate()
             );
-            compilation.hooks.seal.tap("TestPlugin", () => {
-                // TODO the whole project is created each time the seal hook of the compilation is called
-                //  this is potentially pretty costly since often times only a small subset of the files
-                //  change on incremental reload. Probably better: remove/add changed/new source files
-                //  incrementally
-                const tsProject = new Project({
-                    tsConfigFilePath: "./.storybook/tsconfig.json",
-                });
-
+            compilation.hooks.seal.tap(PLUGIN_NAME, () => {
                 const modulesToProcess = this.collectModulesToProcess(
                     compilation.modules,
                     tsProject
                 );
+                // TODO check if this approach is actually faster
+                const smallTsProject = new Project({
+                    tsConfigFilePath: DEFAULT_TS_CONFIG_PATH,
+                    skipAddingFilesFromTsConfig: true,
+                    skipFileDependencyResolution: true,
+                });
+                for (const moduleToProcess of modulesToProcess) {
+                    smallTsProject.addSourceFileAtPath(moduleToProcess[0]);
+                }
+                smallTsProject.resolveSourceFileDependencies();
+
                 for (const [name, module] of modulesToProcess) {
                     const classInformation: ClassInformation[] =
-                        generateClassInformation(name, tsProject);
+                        generateClassInformation(name, smallTsProject);
                     for (const ci of classInformation) {
                         this.addCodeDocDependencyToClass(ci, module);
                     }
