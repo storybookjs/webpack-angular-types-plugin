@@ -1,4 +1,4 @@
-import { Symbol as tsSymbol } from "ts-morph";
+import { Module } from "webpack";
 
 export interface Property {
     name: string;
@@ -33,7 +33,11 @@ export interface TypeDetail {
     detailString: string;
 }
 
-export type TsMorphSymbol = tsSymbol;
 export type TypeDetailCollection = Map<string, TypeDetail>;
 
 export type TypeKind = "interface" | "type" | "class" | "function";
+
+export interface ModuleInformation {
+    path: string;
+    module: Module;
+}
