@@ -14,12 +14,14 @@ export class CodeDocDependency extends Dependency {
         super();
     }
 
-    // TODO is this hash needed? Initially it did not work without it, but at
-    //      the moment, it seems to work fine
     // eslint-disable-next-line
-    /*updateHash(hash: any) {
-        hash.update(this.className);
-    }*/
+    updateHash(hash: any) {
+        // update the hash based on the most recent content, otherwise the dependency-template will
+        // not be evaluated again
+        hash.update(
+            `${this.className}:${this.classId}:${this.codeDocInstructions}:${this.uuidCodeBlock}`
+        );
+    }
 }
 
 export class CodeDocDependencyTemplate {
