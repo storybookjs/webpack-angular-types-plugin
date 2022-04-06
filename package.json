@@ -1,6 +1,6 @@
 {
   "name": "storybook-webpack-angular-types-plugin",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "A webpack plugin that adds type information to angular classes. The information can be consumed by @storybook/addon-docs.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
