@@ -31,7 +31,9 @@ export class WebpackAngularTypesPlugin {
                 new CodeDocDependencyTemplate()
             );
             compilation.hooks.buildModule.tap(PLUGIN_NAME, (module) => {
-                this.moduleQueue.push(module);
+                if (this.isModuleProcessable(module)) {
+                    this.moduleQueue.push(module);
+                }
             });
             compilation.hooks.seal.tap(PLUGIN_NAME, () => {
                 const smallTsProject = new Project({
@@ -40,10 +42,10 @@ export class WebpackAngularTypesPlugin {
                     skipAddingFilesFromTsConfig: true,
                     skipFileDependencyResolution: true,
                 });
-
                 const modulesToProcess = this.moduleQueue
-                    .map((module) => this.getModuleInfoIfProcessable(module))
+                    .map((module) => this.getProcessableModule(module))
                     .filter((module): module is ModuleInformation => !!module);
+
                 for (const { path } of modulesToProcess) {
                     smallTsProject.addSourceFileAtPath(path);
                 }
@@ -79,24 +81,32 @@ export class WebpackAngularTypesPlugin {
         module.addDependency(codeDocDependency);
     }
 
-    private getModuleInfoIfProcessable(
-        module: Module
-    ): ModuleInformation | null {
+    private isModuleProcessable(module: Module): boolean {
         const filePath = module.nameForCondition();
 
         // Skip null values (e.g. raw files)
         if (!filePath) {
-            return null;
+            return false;
         }
 
         // Only add modules that are part of the tsProject
+        // noinspection RedundantIfStatementJS
         if (
             !this.tsProject.getSourceFile(filePath) ||
             !filePath.endsWith(".ts")
         ) {
-            return null;
+            return false;
         }
 
+        return true;
+    }
+
+    private getProcessableModule(module: Module): ModuleInformation | null {
+        const filePath = module.nameForCondition();
+        // this should never occur since we only take modules that are processable
+        if (!this.isModuleProcessable(module) || !filePath) {
+            return null;
+        }
         return {
             module,
             path: filePath,
