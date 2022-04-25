@@ -1,5 +1,9 @@
 import { Module } from "webpack";
 
+export interface WebpackAngularTypesPluginOptions {
+    excludeProperties?: RegExp;
+}
+
 export interface Property {
     name: string;
     alias?: string;

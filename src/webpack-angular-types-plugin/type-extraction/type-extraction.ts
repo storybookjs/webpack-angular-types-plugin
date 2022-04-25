@@ -5,6 +5,7 @@ import {
     Project,
     PropertyDeclaration,
     SetAccessorDeclaration,
+    SyntaxKind,
 } from "ts-morph";
 import { ClassInformation, ClassProperties, Property } from "../../types";
 import { removeFromMapIfExists } from "../utils";
@@ -23,7 +24,10 @@ import {
  * Collects all class members (properties, getters, setters, methods) of a classDeclaration
  * and sorts them into categories (inputs, outputs, normal properties, public methods etc...)
  */
-function getClassMembers(classDeclaration: ClassDeclaration): ClassProperties {
+function getClassMembers(
+    classDeclaration: ClassDeclaration,
+    propertiesToExclude: RegExp | undefined
+): ClassProperties {
     const properties = classDeclaration.getProperties();
     const setters = classDeclaration.getSetAccessors();
     const getters = classDeclaration.getGetAccessors();
@@ -40,6 +44,16 @@ function getClassMembers(classDeclaration: ClassDeclaration): ClassProperties {
         ...getters,
         ...methods,
     ]) {
+        // do not include the property if is private
+        if (declaration.hasModifier(SyntaxKind.PrivateKeyword)) {
+            continue;
+        }
+
+        // do not include the property if it passes the exclusion test
+        if (propertiesToExclude?.test(declaration.getName())) {
+            continue;
+        }
+
         let prop: Property;
         if (declaration instanceof PropertyDeclaration) {
             prop = mapProperty(declaration);
@@ -129,7 +143,8 @@ export function mergeProperties(
  */
 export function generateClassInformation(
     filepath: string,
-    project: Project
+    project: Project,
+    propertiesToExclude: RegExp | undefined
 ): ClassInformation[] {
     const sourceFile = project.getSourceFile(filepath);
     if (!sourceFile) {
@@ -141,7 +156,7 @@ export function generateClassInformation(
     for (const classDeclaration of annotatedClassDeclarations) {
         const baseClasses = collectBaseClasses(classDeclaration);
         const properties = [classDeclaration, ...baseClasses].map((bc) =>
-            getClassMembers(bc)
+            getClassMembers(bc, propertiesToExclude)
         );
         const mergedProperties = mergeProperties(properties);
         const name = classDeclaration.getName();
