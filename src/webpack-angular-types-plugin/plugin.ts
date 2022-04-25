@@ -1,7 +1,11 @@
 import { Project } from "ts-morph";
 import { Compiler, Module } from "webpack";
 import { DEFAULT_TS_CONFIG_PATH, PLUGIN_NAME } from "../constants";
-import { ClassInformation, ModuleInformation } from "../types";
+import {
+    ClassInformation,
+    ModuleInformation,
+    WebpackAngularTypesPluginOptions,
+} from "../types";
 import { getGlobalUniqueIdForClass } from "./class-id-registry";
 import {
     CodeDocDependency,
@@ -23,6 +27,8 @@ export class WebpackAngularTypesPlugin {
         skipLoadingLibFiles: true,
         skipFileDependencyResolution: true,
     });
+
+    constructor(private options: WebpackAngularTypesPluginOptions = {}) {}
 
     apply(compiler: Compiler) {
         compiler.hooks.compilation.tap(PLUGIN_NAME, (compilation) => {
@@ -53,7 +59,11 @@ export class WebpackAngularTypesPlugin {
 
                 for (const { path, module } of modulesToProcess) {
                     const classInformation: ClassInformation[] =
-                        generateClassInformation(path, smallTsProject);
+                        generateClassInformation(
+                            path,
+                            smallTsProject,
+                            this.options.excludeProperties
+                        );
                     for (const ci of classInformation) {
                         this.addCodeDocDependencyToClass(ci, module);
                     }
