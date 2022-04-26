@@ -6,7 +6,8 @@ import {
 } from "ts-morph";
 import { Property, TypeDetail } from "../../types";
 import {
-    getJsDocs,
+    getDefaultValue,
+    getJsDocsDescription,
     isTypeRequired,
     retrieveInputOutputDecoratorAlias,
 } from "./ast-utils";
@@ -23,8 +24,8 @@ export function mapProperty(property: PropertyDeclaration): Property {
     return {
         alias: retrieveInputOutputDecoratorAlias(property),
         name: property.getName(),
-        defaultValue: property.getInitializer()?.getText(),
-        description: getJsDocs(property),
+        defaultValue: getDefaultValue(property),
+        description: getJsDocsDescription(property),
         type: printType(property.getType(), false),
         typeDetails: stringifyTypeDetailCollection(
             generateTypeDetailCollection(
@@ -49,8 +50,8 @@ export function mapSetAccessor(setAccessor: SetAccessorDeclaration): Property {
         alias: retrieveInputOutputDecoratorAlias(setAccessor),
         name: setAccessor.getName(),
         // accessors can not have a default value
-        defaultValue: undefined,
-        description: getJsDocs(setAccessor),
+        defaultValue: getDefaultValue(setAccessor),
+        description: getJsDocsDescription(setAccessor),
         type: printType(parameter.getType(), false),
         typeDetails: stringifyTypeDetailCollection(
             generateTypeDetailCollection(
@@ -71,7 +72,7 @@ export function mapGetAccessor(getAccessor: GetAccessorDeclaration): Property {
         name: getAccessor.getName(),
         // accessors can not have a default value
         defaultValue: undefined,
-        description: getJsDocs(getAccessor),
+        description: getJsDocsDescription(getAccessor),
         type: printType(getAccessor.getType(), false),
         typeDetails: stringifyTypeDetailCollection(
             generateTypeDetailCollection(

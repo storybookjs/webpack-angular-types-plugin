@@ -2,6 +2,8 @@ import {
     ClassDeclaration,
     DecoratableNode,
     JSDocableNode,
+    PropertyDeclaration,
+    SetAccessorDeclaration,
     SourceFile,
     Type,
 } from "ts-morph";
@@ -54,17 +56,23 @@ export function retrieveInputOutputDecoratorAlias(
 }
 
 /*
- * Gets the jsDocs of a node.
+ * Gets the jsDocs description of a node.
  */
-export function getJsDocs(node: JSDocableNode): string {
-    // TODO this needs to be properly implemented. Maybe return an object
-    //      with pre-defined fields like description, params, return etc.
-    return (
-        node
-            .getJsDocs()
-            .map((doc) => doc.getCommentText())
-            .join("\n") || ""
-    );
+export function getJsDocsDescription(node: JSDocableNode): string {
+    return node.getJsDocs()[0]?.getDescription() || "";
+}
+
+/*
+ * Gets a @default param which acts as an override of the initializer of a node
+ */
+export function getJsDocsDefaultValueOverride(
+    node: JSDocableNode
+): string | undefined {
+    return node
+        .getJsDocs()[0]
+        ?.getTags()
+        ?.find((tag) => tag.getTagName() === "default")
+        ?.getCommentText();
 }
 
 /*
@@ -98,4 +106,39 @@ export function collectBaseClasses(cls: ClassDeclaration): ClassDeclaration[] {
         currentClass = currentClass.getBaseClass();
     }
     return bases;
+}
+
+/**
+ * Checks if the given type is evaluable, i.e. no type that needs a function
+ * invocation to be evaluated
+ */
+export function isEvaluableType(type: Type): boolean {
+    return type.isLiteral();
+}
+
+/**
+ * Gets the default value of a property declaration
+ */
+export function getDefaultValue(
+    decl: PropertyDeclaration | SetAccessorDeclaration
+): string | undefined {
+    // check for defaultValue override
+    const defaultValueOverride = getJsDocsDefaultValueOverride(decl);
+    if (defaultValueOverride) {
+        return defaultValueOverride;
+    }
+
+    // otherwise use the initializer for properties (does not exist on setAccessors)
+    if (decl instanceof PropertyDeclaration) {
+        const initializer = decl.getInitializer();
+        const initializerType = initializer?.getType();
+        if (
+            initializer &&
+            initializerType &&
+            isEvaluableType(initializerType)
+        ) {
+            return initializer.getText();
+        }
+    }
+    return undefined;
 }

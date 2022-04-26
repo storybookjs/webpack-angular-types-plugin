@@ -73,6 +73,7 @@ export class ChildComponent extends ParentDirective {
 
     /**
      * This is a child input
+     * @default testDefaultValue
      */
     @Input() childInput?: string = "defaultValue2";
     // eslint-disable-next-line @angular-eslint/no-input-rename
@@ -84,8 +85,12 @@ export class ChildComponent extends ParentDirective {
     @Input("setterInputWithAlias")
     set setterInput(value: boolean) {}
 
-    someNormalProperty = "";
+    someNormalProperty = [2, 5, 10];
 
+    /**
+     * This is some normal setter with a defaultValue override
+     * @default "someValue2"
+     */
     set someNormalSetter(test: string) {}
 
     constructor() {
