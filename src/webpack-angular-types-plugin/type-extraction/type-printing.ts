@@ -11,6 +11,23 @@ function truncateImportPart(typeStr: string): string {
     return typeStr.replace(regex, "");
 }
 
+/*
+ * Given an array of type strings, it is searched if both the "true" and "false"
+ * boolean literal types appear in the array. If so, they are replaced by "boolean"
+ */
+function replaceTrueFalseUnionByBooleanIfExists(union: string[]): string[] {
+    // replace true/false by boolean
+    const trueIndex = union.indexOf("true");
+    const falseIndex = union.indexOf("false");
+    if (trueIndex > -1 && falseIndex > -1) {
+        union = union.filter(
+            (elem, index) => index !== trueIndex && index !== falseIndex
+        );
+        union.push("boolean");
+    }
+    return union;
+}
+
 function printUnionOrIntersection(
     type: Type,
     expandType: boolean,
@@ -23,10 +40,12 @@ function printUnionOrIntersection(
         ? type.getUnionTypes()
         : type.getIntersectionTypes();
     const joinSymbol = type.isUnion() ? " | " : " & ";
-    const res = types
-        .map((t) => printType(t, false, level + 1))
-        .join(joinSymbol);
-    return level > 0 ? wrapInBraces(res) : res;
+    let res = types.map((t) => printType(t, false, level + 1));
+    // ts-morph evaluates the boolean type as a union type of boolean literals (true | false)
+    // for printing, we want to display "boolean"
+    res = replaceTrueFalseUnionByBooleanIfExists(res);
+    const joinedRes = res.join(joinSymbol);
+    return level > 0 ? wrapInBraces(joinedRes) : joinedRes;
 }
 
 function printInterface(
