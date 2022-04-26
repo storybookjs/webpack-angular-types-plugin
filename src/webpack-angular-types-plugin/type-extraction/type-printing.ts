@@ -81,7 +81,7 @@ function printInterface(
         const propName = property.getName();
         const propType = property.getValueDeclarationOrThrow().getType();
         // the whitespaces at the beginning are for indentation
-        res.push(`  ${propName}: ${printType(propType, false, level + 1)};`);
+        res.push(`  ${propName}: ${printType(propType, false, level)};`);
     }
     return wrapInCurlyBraces(res.join("\n"));
 }
