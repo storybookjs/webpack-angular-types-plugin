@@ -17,15 +17,34 @@ function truncateImportPart(typeStr: string): string {
  */
 function replaceTrueFalseUnionByBooleanIfExists(union: string[]): string[] {
     // replace true/false by boolean
-    const trueIndex = union.indexOf("true");
-    const falseIndex = union.indexOf("false");
+    let res = [...union];
+    const trueIndex = res.indexOf("true");
+    const falseIndex = res.indexOf("false");
     if (trueIndex > -1 && falseIndex > -1) {
-        union = union.filter(
+        res = union.filter(
             (elem, index) => index !== trueIndex && index !== falseIndex
         );
-        union.push("boolean");
+        res.push("boolean");
     }
-    return union;
+    return res;
+}
+
+/*
+ * Moves "undefined"/"null" to the end of the string array, if present
+ */
+function pushUndefinedAndNullToEnd(arr: string[]): string[] {
+    const res = [...arr];
+    const nullIndex = res.indexOf("null");
+    if (nullIndex > -1) {
+        res.splice(nullIndex, 1);
+        res.push("null");
+    }
+    const undefinedIndex = res.indexOf("undefined");
+    if (undefinedIndex > -1) {
+        res.splice(undefinedIndex, 1);
+        res.push("undefined");
+    }
+    return res;
 }
 
 function printUnionOrIntersection(
@@ -44,6 +63,7 @@ function printUnionOrIntersection(
     // ts-morph evaluates the boolean type as a union type of boolean literals (true | false)
     // for printing, we want to display "boolean"
     res = replaceTrueFalseUnionByBooleanIfExists(res);
+    res = pushUndefinedAndNullToEnd(res);
     const joinedRes = res.join(joinSymbol);
     return level > 0 ? wrapInBraces(joinedRes) : joinedRes;
 }
