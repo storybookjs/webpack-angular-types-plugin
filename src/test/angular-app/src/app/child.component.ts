@@ -93,6 +93,19 @@ export class ChildComponent extends ParentDirective {
      */
     set someNormalSetter(test: string) {}
 
+    _val = 1;
+
+    /**
+     * A setter that also has a respective getter
+     * @default 1
+     */
+    set bothSetterAndGetter(val: number) {
+        this._val = val;
+    }
+    get bothSetterAndGetter() {
+        return this._val;
+    }
+
     constructor() {
         super();
     }

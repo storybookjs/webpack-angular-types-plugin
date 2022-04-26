@@ -1,4 +1,16 @@
 /*
+ * Removes "key" from each passed map if the key exists
+ */
+export function removeFromMapsIfExists<TKey, TVal>(
+    maps: ReadonlyArray<Map<TKey, TVal>>,
+    key: TKey
+) {
+    for (const map of maps) {
+        removeFromMapIfExists(map, key);
+    }
+}
+
+/*
  * Removes "key" from "map" if the key exists
  */
 export function removeFromMapIfExists<TKey, TVal>(

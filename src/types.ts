@@ -4,6 +4,8 @@ export interface WebpackAngularTypesPluginOptions {
     excludeProperties?: RegExp;
 }
 
+export type PropertyModifier = "getter" | "setter";
+
 export interface Property {
     name: string;
     alias?: string;
@@ -12,6 +14,7 @@ export interface Property {
     type: string;
     typeDetails?: string;
     required: boolean;
+    modifier?: PropertyModifier;
 }
 
 export const Categories = [

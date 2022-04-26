@@ -8,7 +8,7 @@ import {
     SyntaxKind,
 } from "ts-morph";
 import { ClassInformation, ClassProperties, Property } from "../../types";
-import { removeFromMapIfExists } from "../utils";
+import { removeFromMapsIfExists } from "../utils";
 import {
     collectBaseClasses,
     extractComponentOrDirectiveAnnotatedClasses,
@@ -79,6 +79,25 @@ function getClassMembers(
 }
 
 /*
+ * Checks whether in the map a setter/getter property with the given name exists that has some description/defaultValue
+ * defined. In this manner it can be checked, if the user applied jsdoc to either the getter/setter without overriding
+ * the documentation with the undocumented getter/setter.
+ */
+function setterOrGetterPropertyWithDocsAlreadyExists(
+    map: Map<string, Property>,
+    propertyName: string
+): boolean {
+    const existingProperty = map.get(propertyName);
+    if (!existingProperty) {
+        return false;
+    }
+    const { modifier, defaultValue, description } = existingProperty;
+    return (
+        !!existingProperty && !!modifier && (!!defaultValue || !!description)
+    );
+}
+
+/*
  * Merges an array of class properties. Convention: Class properties are provided
  * in decreasing priority, i.e. fields from class properties at the end of the input
  * array are overridden by class properties on a lower index on the input array.
@@ -95,33 +114,47 @@ export function mergeProperties(
     for (let i = properties.length - 1; i > -1; i--) {
         const toMerge = properties[i];
         for (const inputToMerge of toMerge.inputs) {
-            // can happen if a newly defined input was defined as another property type
-            // e.g. base class defines @Output property, child class overrides it as in @Input() property
-            //      this should never happen in valid/useful angular code
-            removeFromMapIfExists(outputs, inputToMerge.name);
-            removeFromMapIfExists(
-                propertiesWithoutDecorators,
+            /*
+             *  can happen if a newly defined input was defined as another property type
+             * e.g. base class defines @Output property, child class overrides it as in @Input() property
+             *      this should never happen in valid/useful angular code
+             */
+            removeFromMapsIfExists(
+                [outputs, propertiesWithoutDecorators],
                 inputToMerge.name
             );
+            if (
+                setterOrGetterPropertyWithDocsAlreadyExists(
+                    inputs,
+                    inputToMerge.name
+                )
+            ) {
+                continue;
+            }
             inputs.set(inputToMerge.name, inputToMerge);
         }
         for (const outputToMerge of toMerge.outputs) {
-            removeFromMapIfExists(inputs, outputToMerge.name);
-            removeFromMapIfExists(
-                propertiesWithoutDecorators,
+            removeFromMapsIfExists(
+                [inputs, propertiesWithoutDecorators],
                 outputToMerge.name
             );
+            // no getter/setter check performed here, like for input/properties, since outputs
+            // usually are not implemented as getter/setter in the angular world
             outputs.set(outputToMerge.name, outputToMerge);
         }
         for (const propertyWithoutDecoratorsToMerge of toMerge.propertiesWithoutDecorators) {
-            removeFromMapIfExists(
-                inputs,
+            removeFromMapsIfExists(
+                [inputs, outputs],
                 propertyWithoutDecoratorsToMerge.name
             );
-            removeFromMapIfExists(
-                outputs,
-                propertyWithoutDecoratorsToMerge.name
-            );
+            if (
+                setterOrGetterPropertyWithDocsAlreadyExists(
+                    propertiesWithoutDecorators,
+                    propertyWithoutDecoratorsToMerge.name
+                )
+            ) {
+                continue;
+            }
             propertiesWithoutDecorators.set(
                 propertyWithoutDecoratorsToMerge.name,
                 propertyWithoutDecoratorsToMerge
