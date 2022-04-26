@@ -60,6 +60,7 @@ export function mapSetAccessor(setAccessor: SetAccessorDeclaration): Property {
             )
         ),
         required: isTypeRequired(parameter.getType()),
+        modifier: "setter",
     };
 }
 
@@ -81,6 +82,7 @@ export function mapGetAccessor(getAccessor: GetAccessorDeclaration): Property {
             )
         ),
         required: false,
+        modifier: "getter",
     };
 }
 
