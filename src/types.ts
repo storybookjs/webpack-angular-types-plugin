@@ -17,11 +17,7 @@ export interface Property {
     modifier?: PropertyModifier;
 }
 
-export const Categories = [
-    "inputs",
-    "outputs",
-    "propertiesWithoutDecorators",
-] as const;
+export const Categories = ["inputs", "outputs", "properties"] as const;
 export type ClassPropertyCategories = typeof Categories[number];
 export type ClassProperties = {
     [category in ClassPropertyCategories]: Property[];

@@ -75,7 +75,7 @@ function getClassMembers(
         }
     }
 
-    return { inputs, outputs, propertiesWithoutDecorators };
+    return { inputs, outputs, properties: propertiesWithoutDecorators };
 }
 
 /*
@@ -102,17 +102,17 @@ function setterOrGetterPropertyWithDocsAlreadyExists(
  * in decreasing priority, i.e. fields from class properties at the end of the input
  * array are overridden by class properties on a lower index on the input array.
  */
-export function mergeProperties(
-    properties: ClassProperties[]
+export function mergeClassProperties(
+    classProperties: ClassProperties[]
 ): ClassProperties {
-    if (properties.length === 1) {
-        return properties[0];
+    if (classProperties.length === 1) {
+        return classProperties[0];
     }
     const inputs = new Map<string, Property>();
     const outputs = new Map<string, Property>();
     const propertiesWithoutDecorators = new Map<string, Property>();
-    for (let i = properties.length - 1; i > -1; i--) {
-        const toMerge = properties[i];
+    for (let i = classProperties.length - 1; i > -1; i--) {
+        const toMerge = classProperties[i];
         for (const inputToMerge of toMerge.inputs) {
             /*
              *  can happen if a newly defined input was defined as another property type
@@ -142,31 +142,29 @@ export function mergeProperties(
             // usually are not implemented as getter/setter in the angular world
             outputs.set(outputToMerge.name, outputToMerge);
         }
-        for (const propertyWithoutDecoratorsToMerge of toMerge.propertiesWithoutDecorators) {
+        for (const propertyWithoutDecorator of toMerge.properties) {
             removeFromMapsIfExists(
                 [inputs, outputs],
-                propertyWithoutDecoratorsToMerge.name
+                propertyWithoutDecorator.name
             );
             if (
                 setterOrGetterPropertyWithDocsAlreadyExists(
                     propertiesWithoutDecorators,
-                    propertyWithoutDecoratorsToMerge.name
+                    propertyWithoutDecorator.name
                 )
             ) {
                 continue;
             }
             propertiesWithoutDecorators.set(
-                propertyWithoutDecoratorsToMerge.name,
-                propertyWithoutDecoratorsToMerge
+                propertyWithoutDecorator.name,
+                propertyWithoutDecorator
             );
         }
     }
     return {
         inputs: Array.from(inputs.values()),
         outputs: Array.from(outputs.values()),
-        propertiesWithoutDecorators: Array.from(
-            propertiesWithoutDecorators.values()
-        ),
+        properties: Array.from(propertiesWithoutDecorators.values()),
     };
 }
 
@@ -188,10 +186,10 @@ export function generateClassInformation(
     const result: ClassInformation[] = [];
     for (const classDeclaration of annotatedClassDeclarations) {
         const baseClasses = collectBaseClasses(classDeclaration);
-        const properties = [classDeclaration, ...baseClasses].map((bc) =>
+        const classProperties = [classDeclaration, ...baseClasses].map((bc) =>
             getClassMembers(bc, propertiesToExclude)
         );
-        const mergedProperties = mergeProperties(properties);
+        const mergedClassProperties = mergeClassProperties(classProperties);
         const name = classDeclaration.getName();
 
         // do not generate type info for anonymous classes
@@ -201,7 +199,7 @@ export function generateClassInformation(
         result.push({
             name,
             modulePath: filepath,
-            properties: mergedProperties,
+            properties: mergedClassProperties,
         });
     }
     return result;
