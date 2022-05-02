@@ -75,7 +75,12 @@ function getClassMembers(
         }
     }
 
-    return { inputs, outputs, properties: propertiesWithoutDecorators };
+    return {
+        inputs,
+        outputs,
+        properties: propertiesWithoutDecorators,
+        methods: publicMethods,
+    };
 }
 
 /*
@@ -111,6 +116,8 @@ export function mergeClassProperties(
     const inputs = new Map<string, Property>();
     const outputs = new Map<string, Property>();
     const propertiesWithoutDecorators = new Map<string, Property>();
+    const methods = new Map<string, Property>();
+
     for (let i = classProperties.length - 1; i > -1; i--) {
         const toMerge = classProperties[i];
         for (const inputToMerge of toMerge.inputs) {
@@ -120,7 +127,7 @@ export function mergeClassProperties(
              *      this should never happen in valid/useful angular code
              */
             removeFromMapsIfExists(
-                [outputs, propertiesWithoutDecorators],
+                [outputs, propertiesWithoutDecorators, methods],
                 inputToMerge.name
             );
             if (
@@ -135,7 +142,7 @@ export function mergeClassProperties(
         }
         for (const outputToMerge of toMerge.outputs) {
             removeFromMapsIfExists(
-                [inputs, propertiesWithoutDecorators],
+                [inputs, propertiesWithoutDecorators, methods],
                 outputToMerge.name
             );
             // no getter/setter check performed here, like for input/properties, since outputs
@@ -144,7 +151,7 @@ export function mergeClassProperties(
         }
         for (const propertyWithoutDecorator of toMerge.properties) {
             removeFromMapsIfExists(
-                [inputs, outputs],
+                [inputs, outputs, methods],
                 propertyWithoutDecorator.name
             );
             if (
@@ -160,11 +167,20 @@ export function mergeClassProperties(
                 propertyWithoutDecorator
             );
         }
+
+        for (const method of toMerge.methods) {
+            removeFromMapsIfExists(
+                [inputs, outputs, propertiesWithoutDecorators],
+                method.name
+            );
+            methods.set(method.name, method);
+        }
     }
     return {
         inputs: Array.from(inputs.values()),
         outputs: Array.from(outputs.values()),
         properties: Array.from(propertiesWithoutDecorators.values()),
+        methods: Array.from(methods.values()),
     };
 }
 

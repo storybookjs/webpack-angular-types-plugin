@@ -1,4 +1,4 @@
-// noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols
+// noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols,JSMethodCanBeStatic
 
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { ParentDirective } from "./parent.directive";
@@ -136,5 +136,19 @@ export class ChildComponent extends ParentDirective {
 
     constructor() {
         super();
+    }
+
+    /**
+     * Public method with parameter and return value description
+     * @param valA The first parameter of this function
+     * @param valB The second parameter of this function
+     * @return Returns the empty string in all cases.
+     */
+    public publicMethod(valA: string, valB: string): string {
+        return "";
+    }
+
+    private privateMethod(val: string): string {
+        return "";
     }
 }
