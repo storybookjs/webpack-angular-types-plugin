@@ -1,91 +1,119 @@
+// noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols,JSMethodCanBeStatic
+
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { ParentDirective } from "./parent.directive";
-
-export type TestType =
-    | string
-    | number
-    | boolean
-    | object
-    | undefined
-    | (NestedInterface & { [val: string]: IndexSignatureInterface });
-
-export interface TestInterface {
-    a?: string;
-    b?: number;
-    c?: object;
-    d?: boolean;
-    e?: NestedInterface;
-}
-
-export interface NestedInterface {
-    prop1: string;
-    prop2: string;
-}
-
-export interface IndexSignatureInterface {
-    prop3: string;
-}
+import { NestedInterface, TestInterface, TestType } from "./types";
 
 @Component({
     selector: "app-child",
     template: `Child works`,
 })
 export class ChildComponent extends ParentDirective {
+    /**
+     * Uninitialized value of string | undefined type.
+     */
     valueOrUndefined: string | undefined;
+
+    /**
+     * Optional, uninitialized of string type.
+     */
     valueOrOptional?: string;
 
+    /**
+     * Value initialized with string literal and implicit type.
+     */
     stringValue = "";
+
+    /**
+     * Value initialized with boolean literal and implicit type.
+     */
     booleanValue = true;
+
+    /**
+     * Value initialized with boolean literal and explicit type.
+     */
     booleanValueTyped: boolean = true;
+
+    /**
+     * Value initialized with number literal and explicit type.
+     */
     numberValue = 10;
+
+    /**
+     * Value initialized with object literal and implicit (any) type.
+     */
     objectValue = {};
 
+    /**
+     * Uninitialized value of type function or undefined.
+     */
     functionValue:
         | ((p1: string, p2: TestType, p3: NestedInterface) => string)
         | undefined;
 
     /**
-     * Should this render
-     *      string | number | boolean | object | undefined;
-     *  to ArgsTable?
+     * Value initialized with string literal. The explicit type is an alias
+     * for a union. In the description only "TestType" should be printed.
+     * In the details, the alias should be expanded to the union.
      */
     valueWithType: TestType = "";
 
     /**
-     * Should we add interfaces to the types so it is possible to do
-     * ArgsTable of={TestInterface}
+     * Value initialized with an object literal. The explicit type is an interface.
+     * In the description only "TestInterface" should be printed. In the details,
+     * the interface should be expanded with its properties.
      */
     valueWithInterface: TestInterface = {};
 
+    /**
+     * A setter. The type "string" should be picked from the parameters.
+     */
     set stringSetter(value: string) {}
 
     /**
-     *  should this be rendered to ArgsTable? it does not right now
+     *  A getter. The type "string" should be picked implicitly from the return value.
      */
     get stringGetter() {
         return "";
     }
 
     /**
-     * This is a description for valueWithComments
+     * This is an input.
      */
-    valueWithComments = "";
+    @Input() simpleInput?: string = "defaultValue2";
 
     /**
-     * This is a child input
-     * @default testDefaultValue
+     * This is an input with an alias. The alias should be printed instead of the field name.
      */
-    @Input() childInput?: string = "defaultValue2";
     // eslint-disable-next-line @angular-eslint/no-input-rename
-    @Input("childInputWithAlias") childInput2?: string;
+    @Input("childInputWithAlias") inputWithAlias?: string;
 
-    @Output() testOutput3 = new EventEmitter<string>();
+    /**
+     * This is an input with an default value override. The override should be
+     * preferred over the initializer.
+     * @default "Overrided"
+     */
+    @Input() inputWithDefaultOverride?: string = "bla";
 
+    /**
+     * This is an output.
+     */
+    @Output() simpleOutput = new EventEmitter<string>();
+
+    /**
+     * This is an output with an alias.
+     */
+    // eslint-disable-next-line
+    @Output("simpleOutputWithAlias") simpleOutputWithAlias =
+        new EventEmitter<string>();
+
+    /**
+     * This is an setter input with an alias and default override
+     * @default false
+     */
     // eslint-disable-next-line @angular-eslint/no-input-rename
     @Input("setterInputWithAlias")
     set setterInput(value: boolean) {}
-
-    someNormalProperty = [2, 5, 10];
 
     /**
      * This is some normal setter with a defaultValue override
@@ -108,5 +136,19 @@ export class ChildComponent extends ParentDirective {
 
     constructor() {
         super();
+    }
+
+    /**
+     * Public method with parameter and return value description
+     * @param valA The first parameter of this function
+     * @param valB The second parameter of this function
+     * @return Returns the empty string in all cases.
+     */
+    public publicMethod(valA: string, valB: string): string {
+        return "";
+    }
+
+    private privateMethod(val: string): string {
+        return "";
     }
 }

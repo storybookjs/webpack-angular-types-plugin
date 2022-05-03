@@ -2,6 +2,7 @@ import {
     ClassDeclaration,
     DecoratableNode,
     JSDocableNode,
+    JSDocTag,
     PropertyDeclaration,
     SetAccessorDeclaration,
     SourceFile,
@@ -60,6 +61,75 @@ export function retrieveInputOutputDecoratorAlias(
  */
 export function getJsDocsDescription(node: JSDocableNode): string {
     return node.getJsDocs()[0]?.getDescription() || "";
+}
+
+/**
+ * Gets the jsDocs params of a node
+ */
+export function getJsDocsParams(node: JSDocableNode): JSDocTag[] {
+    return (
+        node
+            .getJsDocs()[0]
+            ?.getTags()
+            .filter((tag) => tag.getTagName() === "param") || []
+    );
+}
+
+/**
+ * Gets the return type description from the jsDocs of a node
+ */
+export function getJsDocsReturnDescription(node: JSDocableNode): string {
+    return (
+        node
+            .getJsDocs()[0]
+            ?.getTags()
+            ?.find((tag) => tag.getTagName() === "return")
+            ?.getText() || ""
+    );
+}
+
+/**
+ * Splits a jsDoc tag into the prefix, e.g. @param test, and the description of
+ * the param.
+ */
+function splitTag(
+    tag: JSDocTag | string,
+    prefixRegex: RegExp
+): [string, string] {
+    let tagText: string;
+    if (tag instanceof JSDocTag) {
+        tagText = tag.getText() || "";
+    } else {
+        tagText = tag;
+    }
+    const tagPrefix = tagText.match(prefixRegex)?.[0] || "";
+    // sometimes a random \n* is contained in the tagText produced by ts-morph
+    // in this case filter it out, so that it does not mess with the markdown
+    // output
+    const newLineIndex = tagText.indexOf("\n");
+    const endIndex = newLineIndex === -1 ? tagText.length : newLineIndex;
+    const tagDescription = tagText.substring(tagPrefix.length + 1, endIndex);
+    return [tagPrefix, tagDescription];
+}
+
+/**
+ * Formats a jsDoc tag.
+ */
+function formatTag(tag: JSDocTag | string, prefixRegex: RegExp): string {
+    const [prefix, description] = splitTag(tag, prefixRegex);
+    return `&nbsp;&nbsp;&nbsp;**${prefix}** ${description}`;
+}
+
+/**
+ * Formats a jsDoc for a function, including params and return type
+ */
+export function getFunctionJsDocsDescription(node: JSDocableNode): string {
+    const description = getJsDocsDescription(node);
+    const formattedParams = getJsDocsParams(node)
+        .map((n) => formatTag(n, /@\S+ \S+/))
+        .join("<br>");
+    const formattedReturn = formatTag(getJsDocsReturnDescription(node), /@\S+/);
+    return `${description}<br>${formattedParams}<br>${formattedReturn}`;
 }
 
 /*

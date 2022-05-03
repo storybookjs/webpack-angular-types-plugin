@@ -40,7 +40,7 @@ const mapPropToArgsTableProp = (
             }*/
         },
         type: {
-            summary: prop.type,
+            summary: prop.type || "",
             required: prop.required,
             detail: prop.typeDetails,
         },

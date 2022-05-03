@@ -11,7 +11,7 @@ export interface Property {
     alias?: string;
     defaultValue?: string;
     description: string;
-    type: string;
+    type?: string;
     typeDetails?: string;
     required: boolean;
     modifier?: PropertyModifier;
@@ -20,7 +20,8 @@ export interface Property {
 export const Categories = [
     "inputs",
     "outputs",
-    "propertiesWithoutDecorators",
+    "properties",
+    "methods",
 ] as const;
 export type ClassPropertyCategories = typeof Categories[number];
 export type ClassProperties = {

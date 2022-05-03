@@ -7,6 +7,7 @@ import {
 import { Property, TypeDetail } from "../../types";
 import {
     getDefaultValue,
+    getFunctionJsDocsDescription,
     getJsDocsDescription,
     isTypeRequired,
     retrieveInputOutputDecoratorAlias,
@@ -86,7 +87,13 @@ export function mapGetAccessor(getAccessor: GetAccessorDeclaration): Property {
     };
 }
 
-// TODO implement method mapping
 export function mapMethod(method: MethodDeclaration): Property {
-    return {} as Property;
+    return {
+        alias: undefined,
+        name: method.getName(),
+        defaultValue: undefined,
+        description: getFunctionJsDocsDescription(method),
+        type: method.getName() + printType(method.getType(), false),
+        typeDetails: undefined,
+    } as Property;
 }
