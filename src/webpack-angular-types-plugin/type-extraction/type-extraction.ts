@@ -44,8 +44,11 @@ function getClassMembers(
         ...getters,
         ...methods,
     ]) {
-        // do not include the property if is private
-        if (declaration.hasModifier(SyntaxKind.PrivateKeyword)) {
+        // do not include the property if is private/protected
+        if (
+            declaration.hasModifier(SyntaxKind.PrivateKeyword) ||
+            declaration.hasModifier(SyntaxKind.ProtectedKeyword)
+        ) {
             continue;
         }
 

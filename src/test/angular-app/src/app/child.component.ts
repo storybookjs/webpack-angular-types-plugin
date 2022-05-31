@@ -65,6 +65,12 @@ export class ChildComponent extends ParentDirective {
      */
     valueWithInterface: TestInterface = {};
 
+    // Should not be included in the resulting types
+    private privateValue: string = "test";
+
+    // Should not be included in the resulting types
+    protected protectedValue: string = "test";
+
     /**
      * A setter. The type "string" should be picked from the parameters.
      */
