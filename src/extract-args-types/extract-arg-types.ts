@@ -28,7 +28,8 @@ const mapEntityToArgsTableProp = (
     defaultValue: entity.defaultValue,
     table: {
         defaultValue: {
-            summary: entity.defaultValue || "",
+            // em dash (\u2014) is used as fallback if no default is specified
+            summary: entity.defaultValue || "\u2014",
             required: entity.required,
         },
         category: category,
