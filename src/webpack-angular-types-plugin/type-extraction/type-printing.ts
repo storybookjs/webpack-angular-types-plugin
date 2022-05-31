@@ -7,7 +7,7 @@ import { isFunctionType } from "./type-details";
  * resolved from other modules
  */
 function truncateImportPart(typeStr: string): string {
-    const regex = /import\(.+\)\./g;
+    const regex = /import\(.+?\)\./g;
     return typeStr.replace(regex, "");
 }
 
