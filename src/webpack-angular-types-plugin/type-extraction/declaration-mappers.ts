@@ -7,8 +7,9 @@ import {
 import { Entity, EntityKind, TypeDetail } from "../../types";
 import {
     getDefaultValue,
-    getFunctionJsDocsDescription,
     getJsDocsDescription,
+    getJsDocsParams,
+    getJsDocsReturnDescription,
     isTypeRequired,
     retrieveInputOutputDecoratorAlias,
 } from "./ast-utils";
@@ -63,7 +64,7 @@ export function mapProperty(property: PropertyDeclaration): Entity {
         alias: retrieveInputOutputDecoratorAlias(property),
         name: property.getName(),
         defaultValue: getDefaultValue(property),
-        description: getJsDocsDescription(property),
+        description: getJsDocsDescription(property) || "",
         type: printType(property.getType(), false),
         typeDetails: stringifyTypeDetailCollection(
             generateTypeDetailCollection(
@@ -90,7 +91,7 @@ export function mapSetAccessor(setAccessor: SetAccessorDeclaration): Entity {
         name: setAccessor.getName(),
         // accessors can not have a default value
         defaultValue: getDefaultValue(setAccessor),
-        description: getJsDocsDescription(setAccessor),
+        description: getJsDocsDescription(setAccessor) || "",
         type: printType(parameter.getType(), false),
         typeDetails: stringifyTypeDetailCollection(
             generateTypeDetailCollection(
@@ -113,7 +114,7 @@ export function mapGetAccessor(getAccessor: GetAccessorDeclaration): Entity {
         name: getAccessor.getName(),
         // accessors can not have a default value
         defaultValue: undefined,
-        description: getJsDocsDescription(getAccessor),
+        description: getJsDocsDescription(getAccessor) || "",
         type: printType(getAccessor.getType(), false),
         typeDetails: stringifyTypeDetailCollection(
             generateTypeDetailCollection(
@@ -132,7 +133,9 @@ export function mapMethod(method: MethodDeclaration): Entity {
         alias: undefined,
         name: method.getName(),
         defaultValue: undefined,
-        description: getFunctionJsDocsDescription(method),
+        description: getJsDocsDescription(method),
+        jsDocParams: getJsDocsParams(method),
+        jsDocReturn: getJsDocsReturnDescription(method),
         type: method.getName() + printType(method.getType(), false),
         typeDetails: undefined,
     } as Entity;
