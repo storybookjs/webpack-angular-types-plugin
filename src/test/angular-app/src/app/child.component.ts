@@ -1,6 +1,7 @@
 // noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols,JSMethodCanBeStatic
 
 import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Observable } from "rxjs";
 import { ParentDirective } from "./parent.directive";
 import { NestedInterface, TestInterface, TestType } from "./types";
 
@@ -95,11 +96,14 @@ export class ChildComponent extends ParentDirective {
     @Input("childInputWithAlias") inputWithAlias?: string;
 
     /**
-     * This is an input with an default value override. The override should be
+     * This is an input with a default value override. The override should be
      * preferred over the initializer.
-     * @default "Overrided"
+     * @default "Overridden"
      */
     @Input() inputWithDefaultOverride?: string = "bla";
+
+    @Input()
+    nestedGenericType?: Observable<ReadonlyArray<TestInterface>>;
 
     /**
      * This is an output.
