@@ -4,7 +4,7 @@ import {
     PropertyDeclaration,
     SetAccessorDeclaration,
 } from "ts-morph";
-import { Property, TypeDetail } from "../../types";
+import { Entity, EntityKind, TypeDetail } from "../../types";
 import {
     getDefaultValue,
     getFunctionJsDocsDescription,
@@ -18,11 +18,48 @@ import {
 } from "./type-details";
 import { printType } from "./type-printing";
 
+function getEntityKind(
+    declaration:
+        | PropertyDeclaration
+        | SetAccessorDeclaration
+        | GetAccessorDeclaration
+        | MethodDeclaration
+): EntityKind {
+    if (declaration.getDecorator("Input")) {
+        return "input";
+    } else if (declaration.getDecorator("Output")) {
+        return "output";
+    } else if (declaration instanceof MethodDeclaration) {
+        return "method";
+    } else {
+        return "property";
+    }
+}
+
+export function mapToEntity(
+    declaration:
+        | PropertyDeclaration
+        | SetAccessorDeclaration
+        | GetAccessorDeclaration
+        | MethodDeclaration
+): Entity {
+    if (declaration instanceof PropertyDeclaration) {
+        return mapProperty(declaration);
+    } else if (declaration instanceof SetAccessorDeclaration) {
+        return mapSetAccessor(declaration);
+    } else if (declaration instanceof GetAccessorDeclaration) {
+        return mapGetAccessor(declaration);
+    } else {
+        return mapMethod(declaration);
+    }
+}
+
 /*
  * Maps a ts-morph property declaration to our internal Property type
  */
-export function mapProperty(property: PropertyDeclaration): Property {
+export function mapProperty(property: PropertyDeclaration): Entity {
     return {
+        kind: getEntityKind(property),
         alias: retrieveInputOutputDecoratorAlias(property),
         name: property.getName(),
         defaultValue: getDefaultValue(property),
@@ -41,13 +78,14 @@ export function mapProperty(property: PropertyDeclaration): Property {
 /*
  * Maps a ts-morph set accessor declaration to our internal Property type
  */
-export function mapSetAccessor(setAccessor: SetAccessorDeclaration): Property {
+export function mapSetAccessor(setAccessor: SetAccessorDeclaration): Entity {
     const parameters = setAccessor.getParameters();
     const parameter = parameters.length === 1 ? parameters[0] : undefined;
     if (!parameter) {
         throw new Error("Invalid number of arguments for set accessor.");
     }
     return {
+        kind: getEntityKind(setAccessor),
         alias: retrieveInputOutputDecoratorAlias(setAccessor),
         name: setAccessor.getName(),
         // accessors can not have a default value
@@ -68,8 +106,9 @@ export function mapSetAccessor(setAccessor: SetAccessorDeclaration): Property {
 /*
  * Maps a ts-morph get accessor declaration to our internal Property type
  */
-export function mapGetAccessor(getAccessor: GetAccessorDeclaration): Property {
+export function mapGetAccessor(getAccessor: GetAccessorDeclaration): Entity {
     return {
+        kind: getEntityKind(getAccessor),
         alias: retrieveInputOutputDecoratorAlias(getAccessor),
         name: getAccessor.getName(),
         // accessors can not have a default value
@@ -87,13 +126,14 @@ export function mapGetAccessor(getAccessor: GetAccessorDeclaration): Property {
     };
 }
 
-export function mapMethod(method: MethodDeclaration): Property {
+export function mapMethod(method: MethodDeclaration): Entity {
     return {
+        kind: getEntityKind(method),
         alias: undefined,
         name: method.getName(),
         defaultValue: undefined,
         description: getFunctionJsDocsDescription(method),
         type: method.getName() + printType(method.getType(), false),
         typeDetails: undefined,
-    } as Property;
+    } as Entity;
 }

@@ -85,7 +85,11 @@ export class WebpackAngularTypesPlugin {
         const codeDocDependency = new CodeDocDependency(
             ci.name,
             moduleClassId,
-            getComponentArgCodeBlock(ci.name, moduleClassId, ci.properties),
+            getComponentArgCodeBlock(
+                ci.name,
+                moduleClassId,
+                ci.entitiesByCategory
+            ),
             getPrototypeComponentIDCodeBlock(ci.name, moduleClassId)
         );
         module.addDependency(codeDocDependency);
