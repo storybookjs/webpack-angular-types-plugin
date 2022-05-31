@@ -33,11 +33,12 @@ const mapEntityToArgsTableProp = (
         },
         category: category,
         jsDocTags: {
-            // todo wait for 'jsDocTags' field
-            /*params: [{name: 'jsDocTagParamName', description: 'JsDocTagParamDescription'}],
-            returns: {
-                description: 'jsdocTagReturn'
-            }*/
+            params: entity.jsDocParams,
+            returns: entity.jsDocReturn
+                ? {
+                      description: entity.jsDocReturn,
+                  }
+                : undefined,
         },
         type: {
             summary: entity.type || "",

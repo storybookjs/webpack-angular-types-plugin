@@ -8,6 +8,7 @@ import {
     SourceFile,
     Type,
 } from "ts-morph";
+import { JsDocParam } from "../../types";
 import { stripQuotes } from "../utils";
 
 /*
@@ -59,77 +60,58 @@ export function retrieveInputOutputDecoratorAlias(
 /*
  * Gets the jsDocs description of a node.
  */
-export function getJsDocsDescription(node: JSDocableNode): string {
-    return node.getJsDocs()[0]?.getDescription() || "";
+export function getJsDocsDescription(node: JSDocableNode): string | undefined {
+    return node.getJsDocs()[0]?.getDescription();
 }
 
 /**
  * Gets the jsDocs params of a node
  */
-export function getJsDocsParams(node: JSDocableNode): JSDocTag[] {
+export function getJsDocsParams(node: JSDocableNode): JsDocParam[] {
     return (
         node
             .getJsDocs()[0]
             ?.getTags()
-            .filter((tag) => tag.getTagName() === "param") || []
+            .filter((tag) => tag.getTagName() === "param")
+            .map((tag) => getJsDocParam(tag)) || []
     );
 }
 
 /**
  * Gets the return type description from the jsDocs of a node
  */
-export function getJsDocsReturnDescription(node: JSDocableNode): string {
-    return (
-        node
-            .getJsDocs()[0]
-            ?.getTags()
-            ?.find((tag) => tag.getTagName() === "return")
-            ?.getText() || ""
-    );
+export function getJsDocsReturnDescription(
+    node: JSDocableNode
+): string | undefined {
+    const text = node
+        .getJsDocs()[0]
+        ?.getTags()
+        ?.find((tag) => tag.getTagName() === "return")
+        ?.getText();
+    if (!text) {
+        return undefined;
+    }
+    return text.substring(text.indexOf(" ") + 1);
 }
 
 /**
  * Splits a jsDoc tag into the prefix, e.g. @param test, and the description of
  * the param.
  */
-function splitTag(
-    tag: JSDocTag | string,
-    prefixRegex: RegExp
-): [string, string] {
-    let tagText: string;
-    if (tag instanceof JSDocTag) {
-        tagText = tag.getText() || "";
-    } else {
-        tagText = tag;
+function getJsDocParam(tag: JSDocTag): JsDocParam {
+    const split = tag.getText().split(" ");
+    const parts = split.slice(0, 2).concat(split.slice(2).join(" "));
+    let description = parts[2];
+    const eolArtifactIndex = description.match(/\n\s*/)?.index || -1;
+    // ts-morph adds the new-line, as-well as the succeeding asterisk to each tag.
+    // therefore we need to remove it manually
+    if (eolArtifactIndex !== -1) {
+        description = description.substring(0, eolArtifactIndex);
     }
-    const tagPrefix = tagText.match(prefixRegex)?.[0] || "";
-    // sometimes a random \n* is contained in the tagText produced by ts-morph
-    // in this case filter it out, so that it does not mess with the markdown
-    // output
-    const newLineIndex = tagText.indexOf("\n");
-    const endIndex = newLineIndex === -1 ? tagText.length : newLineIndex;
-    const tagDescription = tagText.substring(tagPrefix.length + 1, endIndex);
-    return [tagPrefix, tagDescription];
-}
-
-/**
- * Formats a jsDoc tag.
- */
-function formatTag(tag: JSDocTag | string, prefixRegex: RegExp): string {
-    const [prefix, description] = splitTag(tag, prefixRegex);
-    return `&nbsp;&nbsp;&nbsp;**${prefix}** ${description}`;
-}
-
-/**
- * Formats a jsDoc for a function, including params and return type
- */
-export function getFunctionJsDocsDescription(node: JSDocableNode): string {
-    const description = getJsDocsDescription(node);
-    const formattedParams = getJsDocsParams(node)
-        .map((n) => formatTag(n, /@\S+ \S+/))
-        .join("<br>");
-    const formattedReturn = formatTag(getJsDocsReturnDescription(node), /@\S+/);
-    return `${description}<br>${formattedParams}<br>${formattedReturn}`;
+    return {
+        name: parts[1],
+        description,
+    };
 }
 
 /*

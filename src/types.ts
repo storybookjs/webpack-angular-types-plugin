@@ -6,6 +6,10 @@ export interface WebpackAngularTypesPluginOptions {
 
 export type EntityModifier = "getter" | "setter";
 export type EntityKind = "input" | "output" | "property" | "method";
+export interface JsDocParam {
+    name: string;
+    description: string;
+}
 
 export interface Entity {
     name: string;
@@ -13,6 +17,8 @@ export interface Entity {
     alias?: string;
     defaultValue?: string;
     description: string;
+    jsDocParams?: JsDocParam[];
+    jsDocReturn?: string;
     type?: string;
     typeDetails?: string;
     required: boolean;
