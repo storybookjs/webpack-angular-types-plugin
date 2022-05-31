@@ -1,42 +1,34 @@
-import {
-    ClassDeclaration,
-    GetAccessorDeclaration,
-    MethodDeclaration,
-    Project,
-    PropertyDeclaration,
-    SetAccessorDeclaration,
-    SyntaxKind,
-} from "ts-morph";
-import { ClassInformation, ClassProperties, Property } from "../../types";
-import { removeFromMapsIfExists } from "../utils";
+import { ClassDeclaration, Project, SyntaxKind } from "ts-morph";
+import { ClassInformation, EntitiesByCategory, Entity } from "../../types";
+import { groupBy } from "../utils";
 import {
     collectBaseClasses,
     extractComponentOrDirectiveAnnotatedClasses,
 } from "./ast-utils";
-import {
-    mapGetAccessor,
-    mapMethod,
-    mapProperty,
-    mapSetAccessor,
-} from "./declaration-mappers";
+import { mapToEntity } from "./declaration-mappers";
+
+function getterOrSetterInputExists(
+    entities: Map<string, Entity>,
+    name: string
+): boolean {
+    const entity = entities.get(name);
+    return !!entity && entity.kind === "input";
+}
 
 /*
  * Collects all class members (properties, getters, setters, methods) of a classDeclaration
  * and sorts them into categories (inputs, outputs, normal properties, public methods etc...)
  */
-function getClassMembers(
+function getClassEntities(
     classDeclaration: ClassDeclaration,
     propertiesToExclude: RegExp | undefined
-): ClassProperties {
+): Map<string, Entity> {
     const properties = classDeclaration.getProperties();
     const setters = classDeclaration.getSetAccessors();
     const getters = classDeclaration.getGetAccessors();
     const methods = classDeclaration.getMethods();
 
-    const inputs = [];
-    const outputs = [];
-    const propertiesWithoutDecorators = [];
-    const publicMethods = [];
+    const entities = new Map<string, Entity>();
 
     for (const declaration of [
         ...properties,
@@ -44,7 +36,7 @@ function getClassMembers(
         ...getters,
         ...methods,
     ]) {
-        // do not include the property if is private/protected
+        // do not include the entity if is private/protected
         if (
             declaration.hasModifier(SyntaxKind.PrivateKeyword) ||
             declaration.hasModifier(SyntaxKind.ProtectedKeyword)
@@ -57,52 +49,18 @@ function getClassMembers(
             continue;
         }
 
-        let prop: Property;
-        if (declaration instanceof PropertyDeclaration) {
-            prop = mapProperty(declaration);
-        } else if (declaration instanceof SetAccessorDeclaration) {
-            prop = mapSetAccessor(declaration);
-        } else if (declaration instanceof GetAccessorDeclaration) {
-            prop = mapGetAccessor(declaration);
-        } else {
-            prop = mapMethod(declaration);
+        const entity = mapToEntity(declaration);
+
+        // If there already is an input getter/setter declaration, do not overwrite
+        // the existing mapping
+        if (getterOrSetterInputExists(entities, entity.name)) {
+            continue;
         }
-        if (declaration.getDecorator("Input")) {
-            inputs.push(prop);
-        } else if (declaration.getDecorator("Output")) {
-            outputs.push(prop);
-        } else if (declaration instanceof MethodDeclaration) {
-            publicMethods.push(prop);
-        } else {
-            propertiesWithoutDecorators.push(prop);
-        }
+
+        entities.set(entity.name, entity);
     }
 
-    return {
-        inputs,
-        outputs,
-        properties: propertiesWithoutDecorators,
-        methods: publicMethods,
-    };
-}
-
-/*
- * Checks whether in the map a setter/getter property with the given name exists that has some description/defaultValue
- * defined. In this manner it can be checked, if the user applied jsdoc to either the getter/setter without overriding
- * the documentation with the undocumented getter/setter.
- */
-function setterOrGetterPropertyWithDocsAlreadyExists(
-    map: Map<string, Property>,
-    propertyName: string
-): boolean {
-    const existingProperty = map.get(propertyName);
-    if (!existingProperty) {
-        return false;
-    }
-    const { modifier, defaultValue, description } = existingProperty;
-    return (
-        !!existingProperty && !!modifier && (!!defaultValue || !!description)
-    );
+    return entities;
 }
 
 /*
@@ -110,81 +68,26 @@ function setterOrGetterPropertyWithDocsAlreadyExists(
  * in decreasing priority, i.e. fields from class properties at the end of the input
  * array are overridden by class properties on a lower index on the input array.
  */
-export function mergeClassProperties(
-    classProperties: ClassProperties[]
-): ClassProperties {
-    if (classProperties.length === 1) {
-        return classProperties[0];
+export function mergeClassEntities(
+    classEntities: Map<string, Entity>[]
+): Map<string, Entity> {
+    if (classEntities.length === 1) {
+        return classEntities[0];
     }
-    const inputs = new Map<string, Property>();
-    const outputs = new Map<string, Property>();
-    const propertiesWithoutDecorators = new Map<string, Property>();
-    const methods = new Map<string, Property>();
+    const result = new Map<string, Entity>();
 
-    for (let i = classProperties.length - 1; i > -1; i--) {
-        const toMerge = classProperties[i];
-        for (const inputToMerge of toMerge.inputs) {
-            /*
-             *  can happen if a newly defined input was defined as another property type
-             * e.g. base class defines @Output property, child class overrides it as in @Input() property
-             *      this should never happen in valid/useful angular code
-             */
-            removeFromMapsIfExists(
-                [outputs, propertiesWithoutDecorators, methods],
-                inputToMerge.name
-            );
-            if (
-                setterOrGetterPropertyWithDocsAlreadyExists(
-                    inputs,
-                    inputToMerge.name
-                )
-            ) {
+    for (let i = classEntities.length - 1; i > -1; i--) {
+        const entitiesToMerge = classEntities[i];
+        for (const entityToMerge of entitiesToMerge.values()) {
+            if (getterOrSetterInputExists(result, entityToMerge.name)) {
                 continue;
             }
-            inputs.set(inputToMerge.name, inputToMerge);
-        }
-        for (const outputToMerge of toMerge.outputs) {
-            removeFromMapsIfExists(
-                [inputs, propertiesWithoutDecorators, methods],
-                outputToMerge.name
-            );
-            // no getter/setter check performed here, like for input/properties, since outputs
-            // usually are not implemented as getter/setter in the angular world
-            outputs.set(outputToMerge.name, outputToMerge);
-        }
-        for (const propertyWithoutDecorator of toMerge.properties) {
-            removeFromMapsIfExists(
-                [inputs, outputs, methods],
-                propertyWithoutDecorator.name
-            );
-            if (
-                setterOrGetterPropertyWithDocsAlreadyExists(
-                    propertiesWithoutDecorators,
-                    propertyWithoutDecorator.name
-                )
-            ) {
-                continue;
-            }
-            propertiesWithoutDecorators.set(
-                propertyWithoutDecorator.name,
-                propertyWithoutDecorator
-            );
-        }
 
-        for (const method of toMerge.methods) {
-            removeFromMapsIfExists(
-                [inputs, outputs, propertiesWithoutDecorators],
-                method.name
-            );
-            methods.set(method.name, method);
+            result.set(entityToMerge.name, entityToMerge);
         }
     }
-    return {
-        inputs: Array.from(inputs.values()),
-        outputs: Array.from(outputs.values()),
-        properties: Array.from(propertiesWithoutDecorators.values()),
-        methods: Array.from(methods.values()),
-    };
+
+    return result;
 }
 
 /*
@@ -205,10 +108,10 @@ export function generateClassInformation(
     const result: ClassInformation[] = [];
     for (const classDeclaration of annotatedClassDeclarations) {
         const baseClasses = collectBaseClasses(classDeclaration);
-        const classProperties = [classDeclaration, ...baseClasses].map((bc) =>
-            getClassMembers(bc, propertiesToExclude)
+        const classEntities = [classDeclaration, ...baseClasses].map((bc) =>
+            getClassEntities(bc, propertiesToExclude)
         );
-        const mergedClassProperties = mergeClassProperties(classProperties);
+        const mergedClassEntities = mergeClassEntities(classEntities);
         const name = classDeclaration.getName();
 
         // do not generate type info for anonymous classes
@@ -218,7 +121,10 @@ export function generateClassInformation(
         result.push({
             name,
             modulePath: filepath,
-            properties: mergedClassProperties,
+            entitiesByCategory: groupBy(
+                mergedClassEntities,
+                (entity) => entity.kind
+            ) as EntitiesByCategory,
         });
     }
     return result;

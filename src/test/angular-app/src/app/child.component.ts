@@ -120,6 +120,9 @@ export class ChildComponent extends ParentDirective {
     // eslint-disable-next-line @angular-eslint/no-input-rename
     @Input("setterInputWithAlias")
     set setterInput(value: boolean) {}
+    get setterInput() {
+        return false;
+    }
 
     /**
      * This is some normal setter with a defaultValue override

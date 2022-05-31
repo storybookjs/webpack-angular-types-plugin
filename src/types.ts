@@ -4,34 +4,36 @@ export interface WebpackAngularTypesPluginOptions {
     excludeProperties?: RegExp;
 }
 
-export type PropertyModifier = "getter" | "setter";
+export type EntityModifier = "getter" | "setter";
+export type EntityKind = "input" | "output" | "property" | "method";
 
-export interface Property {
+export interface Entity {
     name: string;
+    kind: EntityKind;
     alias?: string;
     defaultValue?: string;
     description: string;
     type?: string;
     typeDetails?: string;
     required: boolean;
-    modifier?: PropertyModifier;
+    modifier?: EntityModifier;
 }
 
-export const Categories = [
+export const _Categories = [
     "inputs",
     "outputs",
     "properties",
     "methods",
 ] as const;
-export type ClassPropertyCategories = typeof Categories[number];
-export type ClassProperties = {
-    [category in ClassPropertyCategories]: Property[];
+export type Categories = typeof _Categories[number];
+export type EntitiesByCategory = {
+    [category in Categories]: Entity[];
 };
 
 export interface ClassInformation {
     name: string;
     modulePath: string;
-    properties: ClassProperties;
+    entitiesByCategory: EntitiesByCategory;
 }
 
 export interface TypeDetail {
