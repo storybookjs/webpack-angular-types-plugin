@@ -1,15 +1,22 @@
 import { Symbol as TsMorphSymbol, Type } from "ts-morph";
-import { TypeDetail, TypeDetailCollection, TypeKind } from "../../types";
+import {
+    GenericTypeMapping,
+    TypeDetail,
+    TypeDetailCollection,
+    TypeKind,
+} from "../../types";
+import { tryToReplaceTypeByGenericType } from "../utils";
 import { printType } from "./type-printing";
 
 /*
  * Checks if the given type exhibits any index signature (either number or string keys)
  */
-function tryGenerateTypeDetailCollectionForIndexType(
+function handleIndexPropertiesInType(
     type: Type,
     typeDetailCollection: TypeDetailCollection,
-    level: number
-): Map<string, TypeDetail> {
+    level: number,
+    mapping: GenericTypeMapping
+): TypeDetailCollection {
     const numberIndexType = type.getNumberIndexType();
     const stringIndexType = type.getStringIndexType();
     // if one of both signature type is found, follow value type recursively
@@ -17,14 +24,16 @@ function tryGenerateTypeDetailCollectionForIndexType(
         return generateTypeDetailCollection(
             numberIndexType,
             typeDetailCollection,
-            level + 1
+            level + 1,
+            mapping
         );
     }
     if (stringIndexType) {
         return generateTypeDetailCollection(
             stringIndexType,
             typeDetailCollection,
-            level + 1
+            level + 1,
+            mapping
         );
     }
     return typeDetailCollection;
@@ -33,46 +42,254 @@ function tryGenerateTypeDetailCollectionForIndexType(
 /*
  * Iterates all properties of a type and follows the type of the properties recursively
  */
-function followPropertiesInType(
+function handlePropertiesInType(
     type: Type,
     typeDetailCollection: TypeDetailCollection,
-    level: number
+    level: number,
+    mapping: GenericTypeMapping
 ) {
     for (const property of type.getProperties()) {
         generateTypeDetailCollection(
             getTypeFromSymbol(property),
             typeDetailCollection,
-            level + 1
+            level + 1,
+            mapping
         );
     }
 }
 
 /*
- * Helper to convert a type to its corresponding type detail
+ * Mapper to convert a type to its corresponding type detail
  */
-function typeToTypeDetail(type: Type, typeKind: TypeKind): TypeDetail {
+function typeToTypeDetail(
+    type: Type,
+    typeKind: TypeKind,
+    mapping: GenericTypeMapping
+): TypeDetail {
     return {
         type: typeKind,
-        typeName: printType(type, false),
-        detailString: printType(type, true),
+        typeName: printType(type, false, 0, mapping),
+        detailString: printType(type, true, 0, mapping),
     };
 }
 
-export function isLiteralObjectType(type: Type): boolean {
+/*+
+ * Check whether the given type is a (literal) object type
+ */
+export function isObjectType(type: Type): boolean {
+    const typeByAliasSymbol = type.getAliasSymbol()?.getDeclaredType();
     return (
-        type.isObject() &&
-        type.isAnonymous() &&
+        (type.isObject() || !!typeByAliasSymbol?.isObject()) &&
         type.getCallSignatures().length === 0 &&
-        !type.isClassOrInterface()
+        !type.getSymbol()?.getDeclaredType()?.isClassOrInterface()
     );
 }
 
+/**
+ * Checks whether the given type is a function
+ */
 export function isFunctionType(type: Type): boolean {
     return type.getCallSignatures().length > 0;
 }
 
+export function isInterface(type: Type): boolean {
+    return !!type.getSymbol()?.getDeclaredType()?.isInterface();
+}
+
+function isTypeAlreadyCollected(
+    collection: TypeDetailCollection,
+    type: Type
+): boolean {
+    return (
+        (!!type.getSymbol() && collection.has(type.getSymbolOrThrow())) ||
+        (!!type.getAliasSymbol() &&
+            collection.has(type.getAliasSymbolOrThrow()))
+    );
+}
+
+/**
+ * Given a symbol, get the corresponding type
+ */
 function getTypeFromSymbol(symbol: TsMorphSymbol): Type {
     return symbol.getValueDeclaration()?.getType() || symbol.getDeclaredType();
+}
+
+export function getTypeArgumentsFromType(type: Type): Type[] {
+    if (type.getTypeArguments().length > 0) {
+        return type.getTypeArguments();
+    }
+    if (type.getAliasTypeArguments().length > 0) {
+        return type.getAliasTypeArguments();
+    }
+    return [];
+}
+
+function addGenericTypeMappings(
+    typeArgs: Type[],
+    typeParams: Type[],
+    mapping: GenericTypeMapping
+): void {
+    if (typeArgs.length > 0 && typeParams.length === typeArgs.length) {
+        for (let i = 0; i < typeParams.length; i++) {
+            const argSymbol = typeArgs[i].getSymbol();
+            const existingMappedArg = argSymbol
+                ? mapping.get(argSymbol)
+                : undefined;
+            const mappedArg = existingMappedArg ?? typeArgs[i];
+            mapping.set(typeParams[i].getSymbolOrThrow(), mappedArg);
+        }
+    }
+}
+
+function addGenericTypeMappingsForSymbol(
+    type: Type,
+    mapping: GenericTypeMapping
+): void {
+    const typeArguments = type.getTypeArguments();
+    const typeParams =
+        type.getSymbol()?.getDeclaredType().getTypeArguments() || [];
+    addGenericTypeMappings(typeArguments, typeParams, mapping);
+}
+
+function addGenericTypeMappingForAliasSymbol(
+    type: Type,
+    mapping: GenericTypeMapping
+): void {
+    const typeArguments = type.getAliasTypeArguments();
+    const typeParams =
+        type.getAliasSymbol()?.getDeclaredType()?.getAliasTypeArguments() || [];
+    addGenericTypeMappings(typeArguments, typeParams, mapping);
+}
+
+function handleInterface(
+    type: Type,
+    typeDetailCollection: TypeDetailCollection,
+    level: number,
+    mapping: GenericTypeMapping
+): void {
+    // only handle interfaces if they are defined in the own project and not in any third-party-library
+    const symbol = type.getSymbolOrThrow();
+    if (symbol.getFullyQualifiedName().indexOf("node_modules") === -1) {
+        addGenericTypeMappingsForSymbol(type, mapping);
+        const typeToPrint = type.getSymbolOrThrow().getDeclaredType();
+        const typeDetail = typeToTypeDetail(typeToPrint, "interface", mapping);
+        typeDetailCollection.set(type.getSymbolOrThrow(), typeDetail);
+    }
+    handlePropertiesInType(type, typeDetailCollection, level, mapping);
+    handleIndexPropertiesInType(type, typeDetailCollection, level, mapping);
+}
+
+function handleLiteralObject(
+    type: Type,
+    typeDetailCollection: TypeDetailCollection,
+    level: number,
+    mapping: GenericTypeMapping
+): void {
+    if (type.getAliasSymbol()) {
+        addGenericTypeMappingForAliasSymbol(type, mapping);
+        const typeToPrint = type.getAliasSymbolOrThrow().getDeclaredType();
+        const typeDetail: TypeDetail = typeToTypeDetail(
+            typeToPrint,
+            "type",
+            mapping
+        );
+        typeDetailCollection.set(type.getAliasSymbolOrThrow(), typeDetail);
+    }
+    // same as for interfaces, but without registering anything to the typeDetailCollection
+    // not quite sure if the condition is completely correct to select some
+    // anonymous object declaredType like @Input() x: { fieldA: string, fieldB: string } ...
+    handlePropertiesInType(type, typeDetailCollection, level, mapping);
+    handleIndexPropertiesInType(type, typeDetailCollection, level, mapping);
+}
+
+function handleFunction(
+    type: Type,
+    typeDetailCollection: TypeDetailCollection,
+    level: number,
+    mapping: GenericTypeMapping
+): void {
+    if (type.getAliasSymbol()) {
+        const typeDetail: TypeDetail = typeToTypeDetail(
+            type,
+            "function",
+            mapping
+        );
+        typeDetailCollection.set(type.getAliasSymbolOrThrow(), typeDetail);
+    }
+    type.getCallSignatures().forEach((cs) => {
+        generateTypeDetailCollection(
+            cs.getReturnType(),
+            typeDetailCollection,
+            level,
+            mapping
+        );
+        cs.getParameters().forEach((param) => {
+            generateTypeDetailCollection(
+                getTypeFromSymbol(param),
+                typeDetailCollection,
+                level,
+                mapping
+            );
+        });
+    });
+}
+
+function handleUnionOrIntersection(
+    type: Type,
+    typeDetailCollection: TypeDetailCollection,
+    level: number,
+    mapping: GenericTypeMapping
+): void {
+    // if the alias symbol is available, this union/intersection is a declaredType alias
+    // therefore register it to the typeDetailCollection
+    if (type.getAliasSymbol()) {
+        const typeDetail: TypeDetail = typeToTypeDetail(type, "type", mapping);
+        typeDetailCollection.set(type.getAliasSymbolOrThrow(), typeDetail);
+    }
+    // In case of union / intersection declaredType follow all intersection/union parts
+    const types = type.isUnion()
+        ? type.getUnionTypes()
+        : type.getIntersectionTypes();
+    types.forEach((t) =>
+        generateTypeDetailCollection(
+            t,
+            typeDetailCollection,
+            level + 1,
+            mapping
+        )
+    );
+}
+
+function handleAliasTypeArguments(
+    type: Type,
+    typeDetailCollection: TypeDetailCollection,
+    level: number,
+    mapping: GenericTypeMapping
+): void {
+    for (const arg of type.getAliasTypeArguments()) {
+        generateTypeDetailCollection(
+            arg,
+            typeDetailCollection,
+            level + 1,
+            mapping
+        );
+    }
+}
+
+function handleTypeArguments(
+    type: Type,
+    typeDetailCollection: TypeDetailCollection,
+    level: number,
+    mapping: GenericTypeMapping
+): void {
+    for (const arg of type.getTypeArguments()) {
+        generateTypeDetailCollection(
+            arg,
+            typeDetailCollection,
+            level + 1,
+            mapping
+        );
+    }
 }
 
 /*
@@ -82,88 +299,44 @@ function getTypeFromSymbol(symbol: TsMorphSymbol): Type {
 export function generateTypeDetailCollection(
     type: Type,
     typeDetailCollection: TypeDetailCollection,
-    level = 0
+    level: number,
+    mapping: GenericTypeMapping
 ): TypeDetailCollection {
-    if (level > 1) {
-        return typeDetailCollection;
-    }
-    // Type is already collected for this typeDetail
-    if (typeDetailCollection.has(type.getText())) {
-        return typeDetailCollection;
-    }
-    if (type.isInterface()) {
-        // handle properties of interfaces
-        const typeDetail = typeToTypeDetail(type, "interface");
-        typeDetailCollection.set(type.getText(), typeDetail);
-        followPropertiesInType(type, typeDetailCollection, level);
-    } else if (isLiteralObjectType(type)) {
-        // same as for interfaces, but without registering anything to the typeDetailCollection
-        // not quite sure if the condition is completely correct to select some
-        // anonymous object type like @Input() x: { fieldA: string, fieldB: string } ...
-        followPropertiesInType(type, typeDetailCollection, level);
-        tryGenerateTypeDetailCollectionForIndexType(
-            type,
-            typeDetailCollection,
-            level
-        );
-    } else if (isFunctionType(type)) {
-        if (type.getAliasSymbol()) {
-            const typeDetail: TypeDetail = typeToTypeDetail(type, "function");
-            typeDetailCollection.set(printType(type, false), typeDetail);
-        }
-        type.getCallSignatures().forEach((cs) => {
-            generateTypeDetailCollection(
-                cs.getReturnType(),
-                typeDetailCollection
-            );
-            cs.getParameters().forEach((param) => {
-                generateTypeDetailCollection(
-                    getTypeFromSymbol(param),
-                    typeDetailCollection
-                );
-            });
-        });
-    } else if (type.isUnion() || type.isIntersection()) {
-        // if the alias symbol is available, this union/intersection is a type alias
-        // therefore register it to the typeDetailCollection
-        if (type.getAliasSymbol()) {
-            const typeDetail: TypeDetail = typeToTypeDetail(type, "type");
-            typeDetailCollection.set(type.getText(), typeDetail);
-        }
-        // In case of union / intersection type follow all intersection/union parts
-        const types = type.isUnion()
-            ? type.getUnionTypes()
-            : type.getIntersectionTypes();
-        types.forEach((t) =>
-            generateTypeDetailCollection(t, typeDetailCollection, level + 1)
-        );
-    }
-    // TODO add more handling of special types as they occur
-    return typeDetailCollection;
-}
+    const t = tryToReplaceTypeByGenericType(type, mapping);
 
-/*
- * Stringifies a given typeDetailCollection, so that it can be
- */
-export function stringifyTypeDetailCollection(
-    typeDetailCollection: TypeDetailCollection
-): string | undefined {
-    if (typeDetailCollection.size === 0) {
-        return undefined;
+    if (level > 1 || isTypeAlreadyCollected(typeDetailCollection, t)) {
+        return typeDetailCollection;
     }
-    let result = "";
-    for (const {
-        type,
-        typeName,
-        detailString,
-    } of typeDetailCollection.values()) {
-        // type-aliases need some special output formatting since it is "type <type-alias-name> = <type>"
-        // in all other cases, we simply print <type> <type-name> <type-declaration>
-        if (type === "type") {
-            result += `type ${typeName} = ${detailString};\n\n`;
-        } else {
-            result += `${type} ${typeName} ${detailString}\n\n`;
-        }
+
+    if (t.getAliasSymbol()) {
+        addGenericTypeMappingForAliasSymbol(t, mapping);
+        handleAliasTypeArguments(t, typeDetailCollection, level, mapping);
     }
-    return result;
+
+    if (t.getSymbol()) {
+        addGenericTypeMappingsForSymbol(t, mapping);
+        handleTypeArguments(t, typeDetailCollection, level, mapping);
+    }
+
+    if (
+        (type.getSymbol()?.getFullyQualifiedName().indexOf("node_modules") ||
+            -1) > -1 ||
+        (type
+            .getAliasSymbol()
+            ?.getFullyQualifiedName()
+            .indexOf("nodes_modules") || -1) > -1
+    ) {
+        return typeDetailCollection;
+    }
+
+    if (isInterface(t)) {
+        handleInterface(t, typeDetailCollection, level, mapping);
+    } else if (isObjectType(t)) {
+        handleLiteralObject(t, typeDetailCollection, level, mapping);
+    } else if (isFunctionType(t)) {
+        handleFunction(t, typeDetailCollection, level, mapping);
+    } else if (t.isUnion() || t.isIntersection()) {
+        handleUnionOrIntersection(t, typeDetailCollection, level, mapping);
+    }
+    return typeDetailCollection;
 }

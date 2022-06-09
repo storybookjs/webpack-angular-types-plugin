@@ -1,3 +1,11 @@
+import {
+    GetAccessorDeclaration,
+    MethodDeclaration,
+    PropertyDeclaration,
+    SetAccessorDeclaration,
+    Symbol as TsSymbol,
+    Type,
+} from "ts-morph";
 import { Module } from "webpack";
 
 export interface WebpackAngularTypesPluginOptions {
@@ -6,6 +14,7 @@ export interface WebpackAngularTypesPluginOptions {
 
 export type EntityModifier = "getter" | "setter";
 export type EntityKind = "input" | "output" | "property" | "method";
+
 export interface JsDocParam {
     name: string;
     description: string;
@@ -48,11 +57,24 @@ export interface TypeDetail {
     detailString: string;
 }
 
-export type TypeDetailCollection = Map<string, TypeDetail>;
+export type TypeDetailCollection = Map<TsMorphSymbol, TypeDetail>;
 
 export type TypeKind = "interface" | "type" | "class" | "function";
 
 export interface ModuleInformation {
     path: string;
     module: Module;
+}
+
+export type TsMorphSymbol = TsSymbol;
+
+export type GenericTypeMapping = WeakMap<TsMorphSymbol, Type>;
+
+export interface EntityMappingParams {
+    declaration:
+        | PropertyDeclaration
+        | SetAccessorDeclaration
+        | GetAccessorDeclaration
+        | MethodDeclaration;
+    genericTypeMapping: GenericTypeMapping;
 }
