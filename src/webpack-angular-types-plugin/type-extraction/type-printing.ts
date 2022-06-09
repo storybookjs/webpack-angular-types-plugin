@@ -1,15 +1,16 @@
-import { Type } from "ts-morph";
-import { wrapInBraces, wrapInCurlyBraces } from "../utils";
-import { isFunctionType } from "./type-details";
-
-/*
- * Removes the import("...")-part, which is sometimes included when types are
- * resolved from other modules
- */
-function truncateImportPart(typeStr: string): string {
-    const regex = /import\(.+?\)\./g;
-    return typeStr.replace(regex, "");
-}
+import { Type, TypeFormatFlags } from "ts-morph";
+import { GenericTypeMapping, TypeDetailCollection } from "../../types";
+import {
+    tryToReplaceTypeByGenericType,
+    wrapInBraces,
+    wrapInCurlyBraces,
+} from "../utils";
+import {
+    getTypeArgumentsFromType,
+    isFunctionType,
+    isInterface,
+    isObjectType,
+} from "./type-details";
 
 /*
  * Given an array of type strings, it is searched if both the "true" and "false"
@@ -47,19 +48,25 @@ function pushUndefinedAndNullToEnd(arr: string[]): string[] {
     return res;
 }
 
+/**
+ * "Prints" a union or intersection by recursively following the parts of the
+ * union or intersection type, while using the correct delimiter (& or |) to join
+ * the evaluated result again.
+ */
 function printUnionOrIntersection(
     type: Type,
     expandType: boolean,
-    level: number
+    level: number,
+    mapping: GenericTypeMapping
 ): string {
     if (!expandType && type.getAliasSymbol()) {
-        return truncateImportPart(type.getText());
+        return printAliasOrReference(type, expandType, level, mapping);
     }
     const types = type.isUnion()
         ? type.getUnionTypes()
         : type.getIntersectionTypes();
     const joinSymbol = type.isUnion() ? " | " : " & ";
-    let res = types.map((t) => printType(t, false, level + 1));
+    let res = types.map((t) => printType(t, false, level + 1, mapping));
     // ts-morph evaluates the boolean type as a union type of boolean literals (true | false)
     // for printing, we want to display "boolean"
     res = replaceTrueFalseUnionByBooleanIfExists(res);
@@ -68,32 +75,83 @@ function printUnionOrIntersection(
     return level > 0 ? wrapInBraces(joinedRes) : joinedRes;
 }
 
+/**
+ * "Prints" an interface while recursively following all members of the interface.
+ */
+function printObject(
+    type: Type,
+    expandType: boolean,
+    level: number,
+    mapping: GenericTypeMapping
+): string {
+    if (!expandType && type.getAliasSymbol()) {
+        return printAliasOrReference(type, expandType, level, mapping);
+    }
+    const res: string[] = [];
+    const inline = !expandType || level > 0;
+    const indentation = inline ? "" : "   ";
+    for (let i = 0; i < type.getProperties().length; i++) {
+        const propName = type.getProperties()[i].getName();
+        const propType = type
+            .getProperties()
+            [i].getValueDeclaration()
+            ?.getType();
+        if (!propType) {
+            continue;
+        }
+        // the whitespaces at the beginning are for indentation
+        res.push(
+            `${indentation}${propName}: ${printType(
+                propType,
+                false,
+                level,
+                mapping
+            )}`
+        );
+    }
+
+    const joinBy = !inline ? ",\n" : ", ";
+    return wrapInCurlyBraces(res.join(joinBy), inline);
+}
+
 function printInterface(
     type: Type,
     expandType: boolean,
-    level: number
+    level: number,
+    mapping: GenericTypeMapping
 ): string {
     if (!expandType) {
-        return truncateImportPart(type.getText());
+        return printAliasOrReference(type, expandType, level, mapping);
     }
     const res: string[] = [];
     for (const property of type.getProperties()) {
         const propName = property.getName();
         const propType = property.getValueDeclarationOrThrow().getType();
-        // the whitespaces at the beginning are for indentation
-        res.push(`  ${propName}: ${printType(propType, false, level)};`);
+        res.push(
+            `  ${propName}: ${printType(propType, false, level, mapping)};`
+        );
     }
-    return wrapInCurlyBraces(res.join("\n"));
+    return wrapInCurlyBraces(res.join("\n"), false);
 }
 
-function printFunction(type: Type, expandType: boolean, level: number): string {
+function printFunction(
+    type: Type,
+    expandType: boolean,
+    level: number,
+    mapping: GenericTypeMapping
+): string {
     if (!expandType && type.getAliasSymbol()) {
-        return truncateImportPart(type.getText());
+        return printAliasOrReference(type, expandType, level, mapping);
     }
     const css = type.getCallSignatures();
     const res: string[] = [];
     for (const cs of css) {
-        const retTypeString = printType(cs.getReturnType(), false, level + 1);
+        const retTypeString = printType(
+            cs.getReturnType(),
+            false,
+            level,
+            mapping
+        );
         const paramStrings: string[] = [];
         for (const param of cs.getParameters()) {
             const paramName = param.getName();
@@ -101,7 +159,8 @@ function printFunction(type: Type, expandType: boolean, level: number): string {
                 param.getValueDeclaration()?.getType() ||
                     param.getDeclaredType(),
                 false,
-                level + 1
+                level,
+                mapping
             );
             const paramString = `${paramName}: ${paramType}`;
             paramStrings.push(paramString);
@@ -112,17 +171,78 @@ function printFunction(type: Type, expandType: boolean, level: number): string {
     return res.join("\n");
 }
 
+function printAliasOrReference(
+    type: Type,
+    expandType: boolean,
+    level: number,
+    mapping: GenericTypeMapping
+): string {
+    const typeArguments = getTypeArgumentsFromType(type);
+    const typeText = type.getText(undefined, TypeFormatFlags.None);
+
+    // the type has no type arguments, it can just be returned
+    if (typeArguments.length === 0) {
+        return typeText;
+    }
+
+    const typeTextWithoutParams = typeText.substring(
+        0,
+        Math.max(typeText.indexOf("<"), 0)
+    );
+
+    // if type parameters are present, we have to follow them recursively, since
+    // they could have nested type parameters itself
+    const mappedArguments = typeArguments
+        .map((arg) => printType(arg, false, 0, mapping))
+        .join(", ");
+    return typeTextWithoutParams + "<" + mappedArguments + ">";
+}
+
 /*
  * Gets a printable string from a type.
  */
-export function printType(type: Type, expandType: boolean, level = 0): string {
-    if (type.isUnion() || type.isIntersection()) {
-        return printUnionOrIntersection(type, expandType, level);
-        // interfaces are only expanded on the root level
-    } else if (type.isInterface()) {
-        return printInterface(type, expandType, level);
+export function printType(
+    typeToPrint: Type,
+    expandType: boolean,
+    level: number,
+    mapping: GenericTypeMapping
+): string {
+    const type = tryToReplaceTypeByGenericType(typeToPrint, mapping);
+    if (type.isUnionOrIntersection()) {
+        return printUnionOrIntersection(type, expandType, level, mapping);
+    } else if (isInterface(type)) {
+        return printInterface(type, expandType, level, mapping);
+    } else if (isObjectType(type)) {
+        return printObject(type, expandType, level, mapping);
     } else if (isFunctionType(type)) {
-        return printFunction(type, expandType, level);
+        return printFunction(type, expandType, level, mapping);
+    } else {
+        return printAliasOrReference(type, expandType, level, mapping);
     }
-    return truncateImportPart(type.getText());
+}
+
+/*
+ * Stringifies a given typeDetailCollection
+ */
+export function stringifyTypeDetailCollection(
+    typeDetailCollection: TypeDetailCollection
+): string | undefined {
+    if (typeDetailCollection.size === 0) {
+        return undefined;
+    }
+    let result = "";
+    for (const {
+        type,
+        typeName,
+        detailString,
+    } of typeDetailCollection.values()) {
+        // type-aliases need some special output formatting since it is "type <type-alias-name> = <type>"
+        // in all other cases, we simply print <type> <type-name> <type-declaration>
+        if (type === "type") {
+            result += `type ${typeName} = ${detailString};\n\n`;
+        } else {
+            result += `${type} ${typeName} ${detailString}\n\n`;
+        }
+    }
+    return result;
 }

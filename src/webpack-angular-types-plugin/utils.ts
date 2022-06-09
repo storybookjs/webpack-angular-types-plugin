@@ -1,6 +1,9 @@
 /*
  * Remove any leading and trailing quotes (single and double) from a given string
  */
+import { Type } from "ts-morph";
+import { GenericTypeMapping } from "../types";
+
 export function stripQuotes(input: string): string {
     return input.replace(/^"|^'|"$|'$/g, "");
 }
@@ -9,8 +12,14 @@ export function wrapInBraces(input: string): string {
     return "(" + input + ")";
 }
 
-export function wrapInCurlyBraces(input: string): string {
-    return "{\n" + input + "\n}";
+export function wrapInCurlyBraces(input: string, inline: boolean): string {
+    if (input.length === 0) {
+        return "{}";
+    } else if (inline) {
+        return `{ ${input} }`;
+    } else {
+        return `{\n${input}\n}`;
+    }
 }
 
 export function componentWithIdString(
@@ -34,4 +43,19 @@ export function groupBy<T>(
         res[groupKey].push(entity);
     }
     return res;
+}
+
+export function tryToReplaceTypeByGenericType(
+    type: Type,
+    genericMapping: GenericTypeMapping
+): Type {
+    const symbol = type.getSymbol();
+    if (!symbol) {
+        return type;
+    }
+    const mappedType = genericMapping.get(symbol);
+    if (mappedType) {
+        return mappedType;
+    }
+    return type;
 }
