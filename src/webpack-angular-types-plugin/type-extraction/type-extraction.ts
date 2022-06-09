@@ -81,6 +81,18 @@ function extractGenericTypesFromClass(
     return result;
 }
 
+const ANGULAR_LIFECYCLE_HOOKS = [
+    "ngOnInit",
+    "ngOnChanges",
+    "ngAfterContentInit",
+    "ngAfterViewInit",
+    "ngOnDestroy",
+];
+
+function isAngularLifeCycleHook(name: string): boolean {
+    return ANGULAR_LIFECYCLE_HOOKS.includes(name);
+}
+
 /*
  * Collects all class entities (properties, getters, setters, methods) of a classDeclaration
  */
@@ -105,7 +117,8 @@ function getClassEntities(
         // do not include the entity if is private/protected
         if (
             declaration.hasModifier(SyntaxKind.PrivateKeyword) ||
-            declaration.hasModifier(SyntaxKind.ProtectedKeyword)
+            declaration.hasModifier(SyntaxKind.ProtectedKeyword) ||
+            isAngularLifeCycleHook(declaration.getName())
         ) {
             continue;
         }
