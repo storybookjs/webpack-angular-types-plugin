@@ -3,7 +3,7 @@ import {
     STORYBOOK_ANGULAR_ARG_TYPES,
     STORYBOOK_COMPONENT_ID,
 } from "../constants";
-import { ClassProperties, Property } from "../types";
+import { EntitiesByCategory, Entity } from "../types";
 
 // See https://github.com/storybookjs/storybook/blob/f4b3a880e7f00bd1b28e7691d45bcc1c41b1cafe/lib/components/src/blocks/ArgsTable/types.ts
 interface ExtendedArgType extends ArgType {
@@ -12,51 +12,53 @@ interface ExtendedArgType extends ArgType {
 
 type DirectiveType<TDirective> = new (...args: unknown[]) => TDirective;
 
-const getAngularDirectiveProperties = (
+const getAngularDirectiveEntities = (
     componentId: string
-): ClassProperties | undefined => {
+): EntitiesByCategory | undefined => {
     // eslint-disable-next-line
     return (window as any)[STORYBOOK_ANGULAR_ARG_TYPES][componentId];
 };
 
-const mapPropToArgsTableProp = (
-    prop: Property,
+const mapEntityToArgsTableProp = (
+    entity: Entity,
     category: string
 ): ExtendedArgType => ({
-    name: prop.alias || prop.name,
-    description: prop.description,
-    defaultValue: prop.defaultValue,
+    name: entity.alias || entity.name,
+    description: entity.description,
+    defaultValue: entity.defaultValue,
     table: {
         defaultValue: {
-            summary: prop.defaultValue || "",
-            required: prop.required,
+            // em dash (\u2014) is used as fallback if no default is specified
+            summary: entity.defaultValue || "\u2014",
+            required: entity.required,
         },
         category: category,
         jsDocTags: {
-            // todo wait for 'jsDocTags' field
-            /*params: [{name: 'jsDocTagParamName', description: 'JsDocTagParamDescription'}],
-            returns: {
-                description: 'jsdocTagReturn'
-            }*/
+            params: entity.jsDocParams,
+            returns: entity.jsDocReturn
+                ? {
+                      description: entity.jsDocReturn,
+                  }
+                : undefined,
         },
         type: {
-            summary: prop.type || "",
-            required: prop.required,
-            detail: prop.typeDetails,
+            summary: entity.type || "",
+            required: entity.required,
+            detail: entity.typeDetails,
         },
     },
 });
 
-const mapPropsToArgsTableProps = (
-    directive: ClassProperties
+const mapEntitiesToArgsTableProps = (
+    entitiesByCategory: EntitiesByCategory
 ): ExtendedArgType[] => {
     const argsTableProps: ExtendedArgType[] = [];
 
-    for (const [categoryKey, properties] of Object.entries<Property[]>(
-        directive
+    for (const [categoryKey, entities] of Object.entries<Entity[]>(
+        entitiesByCategory
     )) {
-        for (const property of properties) {
-            argsTableProps.push(mapPropToArgsTableProp(property, categoryKey));
+        for (const entity of entities) {
+            argsTableProps.push(mapEntityToArgsTableProp(entity, categoryKey));
         }
     }
 
@@ -66,11 +68,11 @@ const mapPropsToArgsTableProps = (
 export const extractArgTypes = <TDirective>(
     directive: DirectiveType<TDirective>
 ): ArgType[] | undefined => {
-    const props = getAngularDirectiveProperties(
+    const entities = getAngularDirectiveEntities(
         directive.prototype[STORYBOOK_COMPONENT_ID]
     );
-    if (!props) {
+    if (!entities) {
         return;
     }
-    return mapPropsToArgsTableProps(props);
+    return mapEntitiesToArgsTableProps(entities);
 };

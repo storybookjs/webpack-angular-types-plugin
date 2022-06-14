@@ -1,14 +1,21 @@
+/* eslint-disable */
 // noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols,JSMethodCanBeStatic
 
 import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Observable } from "rxjs";
 import { ParentDirective } from "./parent.directive";
-import { NestedInterface, TestInterface, TestType } from "./types";
+import {
+    NestedInterface,
+    TestInterface,
+    TestObjectType,
+    TestType,
+} from "./types";
 
 @Component({
     selector: "app-child",
     template: `Child works`,
 })
-export class ChildComponent extends ParentDirective {
+export class ChildComponent extends ParentDirective<string> {
     /**
      * Uninitialized value of string | undefined type.
      */
@@ -63,7 +70,13 @@ export class ChildComponent extends ParentDirective {
      * In the description only "TestInterface" should be printed. In the details,
      * the interface should be expanded with its properties.
      */
-    valueWithInterface: TestInterface = {};
+    valueWithInterface: TestInterface<string> = {};
+
+    // Should not be included in the resulting types
+    private privateValue: string = "test";
+
+    // Should not be included in the resulting types
+    protected protectedValue: string = "test";
 
     /**
      * A setter. The type "string" should be picked from the parameters.
@@ -89,11 +102,14 @@ export class ChildComponent extends ParentDirective {
     @Input("childInputWithAlias") inputWithAlias?: string;
 
     /**
-     * This is an input with an default value override. The override should be
+     * This is an input with a default value override. The override should be
      * preferred over the initializer.
-     * @default "Overrided"
+     * @default "Overridden"
      */
     @Input() inputWithDefaultOverride?: string = "bla";
+
+    @Input()
+    nestedGenericType?: Observable<ReadonlyArray<TestInterface<boolean>>>;
 
     /**
      * This is an output.
@@ -115,6 +131,16 @@ export class ChildComponent extends ParentDirective {
     @Input("setterInputWithAlias")
     set setterInput(value: boolean) {}
 
+    get setterInput() {
+        return false;
+    }
+
+    @Input() arrayInput?: Array<string>;
+
+    @Input() readonlyArrayInput?: ReadonlyArray<string>;
+
+    @Input() testObjectTypeInput?: TestObjectType<string>;
+
     /**
      * This is some normal setter with a defaultValue override
      * @default "someValue2"
@@ -130,6 +156,7 @@ export class ChildComponent extends ParentDirective {
     set bothSetterAndGetter(val: number) {
         this._val = val;
     }
+
     get bothSetterAndGetter() {
         return this._val;
     }
@@ -137,6 +164,16 @@ export class ChildComponent extends ParentDirective {
     constructor() {
         super();
     }
+
+    ngOnInit() {}
+
+    ngOnChanges() {}
+
+    ngAfterViewInit() {}
+
+    ngAfterContentInit() {}
+
+    ngOnDestroy() {}
 
     /**
      * Public method with parameter and return value description

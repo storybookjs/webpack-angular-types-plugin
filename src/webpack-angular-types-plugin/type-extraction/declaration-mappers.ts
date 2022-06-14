@@ -4,60 +4,107 @@ import {
     PropertyDeclaration,
     SetAccessorDeclaration,
 } from "ts-morph";
-import { Property, TypeDetail } from "../../types";
+import {
+    Entity,
+    EntityKind,
+    EntityMappingParams,
+    TsMorphSymbol,
+    TypeDetail,
+} from "../../types";
 import {
     getDefaultValue,
-    getFunctionJsDocsDescription,
     getJsDocsDescription,
+    getJsDocsParams,
+    getJsDocsReturnDescription,
     isTypeRequired,
     retrieveInputOutputDecoratorAlias,
 } from "./ast-utils";
-import {
-    generateTypeDetailCollection,
-    stringifyTypeDetailCollection,
-} from "./type-details";
-import { printType } from "./type-printing";
+import { generateTypeDetailCollection } from "./type-details";
+import { printType, stringifyTypeDetailCollection } from "./type-printing";
+
+function getEntityKind(
+    declaration:
+        | PropertyDeclaration
+        | SetAccessorDeclaration
+        | GetAccessorDeclaration
+        | MethodDeclaration
+): EntityKind {
+    if (declaration.getDecorator("Input")) {
+        return "input";
+    } else if (declaration.getDecorator("Output")) {
+        return "output";
+    } else if (declaration instanceof MethodDeclaration) {
+        return "method";
+    } else {
+        return "property";
+    }
+}
+
+export function mapToEntity(params: EntityMappingParams): Entity {
+    if (params.declaration instanceof PropertyDeclaration) {
+        return mapProperty(params);
+    } else if (params.declaration instanceof SetAccessorDeclaration) {
+        return mapSetAccessor(params);
+    } else if (params.declaration instanceof GetAccessorDeclaration) {
+        return mapGetAccessor(params);
+    } else {
+        return mapMethod(params);
+    }
+}
 
 /*
  * Maps a ts-morph property declaration to our internal Property type
  */
-export function mapProperty(property: PropertyDeclaration): Property {
+export function mapProperty({
+    declaration,
+    genericTypeMapping,
+}: EntityMappingParams): Entity {
     return {
-        alias: retrieveInputOutputDecoratorAlias(property),
-        name: property.getName(),
-        defaultValue: getDefaultValue(property),
-        description: getJsDocsDescription(property),
-        type: printType(property.getType(), false),
+        kind: getEntityKind(declaration),
+        alias: retrieveInputOutputDecoratorAlias(declaration),
+        name: declaration.getName(),
+        defaultValue: getDefaultValue(declaration as PropertyDeclaration),
+        description: getJsDocsDescription(declaration) || "",
+        type: printType(declaration.getType(), false, 0, genericTypeMapping),
         typeDetails: stringifyTypeDetailCollection(
             generateTypeDetailCollection(
-                property.getType(),
-                new Map<string, TypeDetail>()
+                declaration.getType(),
+                new Map<TsMorphSymbol, TypeDetail>(),
+                0,
+                genericTypeMapping
             )
         ),
-        required: isTypeRequired(property.getType()),
+        required: isTypeRequired(declaration.getType()),
     };
 }
 
 /*
  * Maps a ts-morph set accessor declaration to our internal Property type
  */
-export function mapSetAccessor(setAccessor: SetAccessorDeclaration): Property {
-    const parameters = setAccessor.getParameters();
+export function mapSetAccessor({
+    declaration,
+    genericTypeMapping,
+}: EntityMappingParams): Entity {
+    const setAccessorDeclaration = declaration as SetAccessorDeclaration;
+    const parameters = setAccessorDeclaration.getParameters();
     const parameter = parameters.length === 1 ? parameters[0] : undefined;
     if (!parameter) {
         throw new Error("Invalid number of arguments for set accessor.");
     }
     return {
-        alias: retrieveInputOutputDecoratorAlias(setAccessor),
-        name: setAccessor.getName(),
+        kind: getEntityKind(setAccessorDeclaration),
+        alias: retrieveInputOutputDecoratorAlias(setAccessorDeclaration),
+        name: setAccessorDeclaration.getName(),
         // accessors can not have a default value
-        defaultValue: getDefaultValue(setAccessor),
-        description: getJsDocsDescription(setAccessor),
-        type: printType(parameter.getType(), false),
+        defaultValue: getDefaultValue(setAccessorDeclaration),
+        description: getJsDocsDescription(setAccessorDeclaration) || "",
+        type: printType(parameter.getType(), false, 0, genericTypeMapping),
         typeDetails: stringifyTypeDetailCollection(
             generateTypeDetailCollection(
                 parameter.getType(),
-                new Map<string, TypeDetail>()
+                new Map<TsMorphSymbol, TypeDetail>(),
+                0,
+                genericTypeMapping
             )
         ),
         required: isTypeRequired(parameter.getType()),
@@ -68,18 +115,30 @@ export function mapSetAccessor(setAccessor: SetAccessorDeclaration): Property {
 /*
  * Maps a ts-morph get accessor declaration to our internal Property type
  */
-export function mapGetAccessor(getAccessor: GetAccessorDeclaration): Property {
+export function mapGetAccessor({
+    declaration,
+    genericTypeMapping,
+}: EntityMappingParams): Entity {
+    const getAccessorDeclaration = declaration as GetAccessorDeclaration;
     return {
-        alias: retrieveInputOutputDecoratorAlias(getAccessor),
-        name: getAccessor.getName(),
+        kind: getEntityKind(getAccessorDeclaration),
+        alias: retrieveInputOutputDecoratorAlias(getAccessorDeclaration),
+        name: getAccessorDeclaration.getName(),
         // accessors can not have a default value
         defaultValue: undefined,
-        description: getJsDocsDescription(getAccessor),
-        type: printType(getAccessor.getType(), false),
+        description: getJsDocsDescription(getAccessorDeclaration) || "",
+        type: printType(
+            getAccessorDeclaration.getType(),
+            false,
+            0,
+            genericTypeMapping
+        ),
         typeDetails: stringifyTypeDetailCollection(
             generateTypeDetailCollection(
-                getAccessor.getType(),
-                new Map<string, TypeDetail>()
+                getAccessorDeclaration.getType(),
+                new Map<TsMorphSymbol, TypeDetail>(),
+                0,
+                genericTypeMapping
             )
         ),
         required: false,
@@ -87,13 +146,28 @@ export function mapGetAccessor(getAccessor: GetAccessorDeclaration): Property {
     };
 }
 
-export function mapMethod(method: MethodDeclaration): Property {
+export function mapMethod({
+    declaration,
+    genericTypeMapping,
+}: EntityMappingParams): Entity {
+    const methodDeclaration = declaration as MethodDeclaration;
     return {
+        kind: getEntityKind(methodDeclaration),
         alias: undefined,
-        name: method.getName(),
+        name: methodDeclaration.getName(),
         defaultValue: undefined,
-        description: getFunctionJsDocsDescription(method),
-        type: method.getName() + printType(method.getType(), false),
+        description: getJsDocsDescription(methodDeclaration) || "",
+        jsDocParams: getJsDocsParams(methodDeclaration),
+        jsDocReturn: getJsDocsReturnDescription(methodDeclaration),
+        type:
+            methodDeclaration.getName() +
+            printType(
+                methodDeclaration.getType(),
+                false,
+                0,
+                genericTypeMapping
+            ),
         typeDetails: undefined,
-    } as Property;
+        required: false,
+    };
 }
