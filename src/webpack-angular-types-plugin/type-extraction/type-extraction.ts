@@ -6,12 +6,13 @@ import {
     GenericTypeMapping,
     TsMorphSymbol,
 } from "../../types";
-import { groupBy, tryToReplaceTypeByGenericType } from "../utils";
+import { groupBy } from "../utils";
 import {
     collectBaseClasses,
     extractComponentOrDirectiveAnnotatedClasses,
 } from "./ast-utils";
 import { mapToEntity } from "./declaration-mappers";
+import { addGenericTypeMappings } from "./type-details";
 
 /**
  * Checks whether a getter/setter input is already present in the given map
@@ -50,33 +51,19 @@ function extractGenericTypesFromClass(
 ): GenericTypeMapping {
     const result = new WeakMap<TsMorphSymbol, Type>();
     for (const classDeclaration of classDeclarations) {
-        const targetTypeArguments = classDeclaration
-            .getExtends()
-            ?.getTypeArguments()
-            .map((a) => a.getType());
-        if (targetTypeArguments && targetTypeArguments.length > 0) {
-            const baseClass = classDeclaration.getBaseClass();
-            if (baseClass) {
-                const sourceTypeArguments = baseClass
-                    .getTypeParameters()
-                    .map((p) => p.getType());
-                if (
-                    sourceTypeArguments &&
-                    sourceTypeArguments.length === targetTypeArguments.length
-                ) {
-                    for (let i = 0; i < sourceTypeArguments.length; i++) {
-                        const mappedType = tryToReplaceTypeByGenericType(
-                            targetTypeArguments[i],
-                            result
-                        );
-                        result.set(
-                            sourceTypeArguments[i].getSymbolOrThrow(),
-                            mappedType
-                        );
-                    }
-                }
-            }
-        }
+        const targetTypeArguments =
+            classDeclaration
+                .getExtends()
+                ?.getTypeArguments()
+                .map((a) => a.getType()) || [];
+        const baseClass = classDeclaration.getBaseClass();
+        const sourceTypeArguments =
+            baseClass?.getTypeParameters().map((p) => p.getType()) || [];
+        addGenericTypeMappings(
+            targetTypeArguments,
+            sourceTypeArguments,
+            result
+        );
     }
     return result;
 }
@@ -87,6 +74,9 @@ const ANGULAR_LIFECYCLE_HOOKS = [
     "ngAfterContentInit",
     "ngAfterViewInit",
     "ngOnDestroy",
+    "ngDoCheck",
+    "ngAfterContentChecked",
+    "ngAfterViewChecked",
 ];
 
 function isAngularLifeCycleHook(name: string): boolean {

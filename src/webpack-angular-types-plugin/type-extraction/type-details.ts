@@ -124,7 +124,7 @@ export function getTypeArgumentsFromType(type: Type): Type[] {
     return [];
 }
 
-function addGenericTypeMappings(
+export function addGenericTypeMappings(
     typeArgs: Type[],
     typeParams: Type[],
     mapping: GenericTypeMapping
