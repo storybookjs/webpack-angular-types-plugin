@@ -1,10 +1,10 @@
 const WebpackAngularTypesPlugin =
-    require("../../../../dist/webpack-angular-types-plugin/plugin").WebpackAngularTypesPlugin;
+    require("storybook-webpack-angular-types-plugin").WebpackAngularTypesPlugin;
 
 module.exports = {
     stories: [
-        "../src/**/*.stories.mdx",
-        "../src/**/*.stories.@(js|jsx|ts|tsx)",
+        "../storybook-webpack-angular-types-plugin/**/*.stories.mdx",
+        "../storybook-webpack-angular-types-plugin/**/*.stories.@(js|jsx|ts|tsx)",
     ],
     addons: [
         "@storybook/addon-links",
