@@ -1,0 +1,36 @@
+{
+  "name": "storybook-webpack-angular-types-plugin",
+  "version": "0.3.3",
+  "description": "A webpack plugin that adds type information to angular classes. The information can be consumed by @storybook/addon-docs.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/storybookjs/webpack-angular-types-plugin.git"
+  },
+  "keywords": [
+    "Storybook",
+    "Webpack",
+    "Angular",
+    "TypeScript"
+  ],
+  "author": "Kai Roeder",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/storybookjs/webpack-angular-types-plugin/issues"
+  },
+  "homepage": "https://github.com/storybookjs/webpack-angular-types-plugin#readme",
+  "devDependencies": {
+    "@storybook/components": "^6.5.9",
+    "typescript": "~4.7.4",
+    "webpack": "^5.73.0"
+  },
+  "peerDependencies": {
+    "@storybook/components": "^6.5.9",
+    "webpack": "^5.0.0"
+  },
+  "dependencies": {
+    "ts-morph": "^15.1.0"
+  }
+}
