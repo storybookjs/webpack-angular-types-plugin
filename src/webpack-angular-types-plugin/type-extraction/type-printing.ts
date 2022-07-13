@@ -7,9 +7,11 @@ import {
 } from "../utils";
 import {
     getTypeArgumentsFromType,
+    isArray,
     isFunctionType,
     isInterface,
     isObjectType,
+    isReadonlyArray,
 } from "./type-details";
 
 /*
@@ -171,6 +173,36 @@ function printFunction(
     return res.join("\n");
 }
 
+function printTuple(
+    type: Type,
+    expandType: boolean,
+    level: number,
+    mapping: GenericTypeMapping
+): string {
+    if (!expandType && type.getAliasSymbol()) {
+        return printAliasOrReference(type, expandType, level, mapping);
+    }
+    return (
+        "[" +
+        type
+            .getTupleElements()
+            .map((te) => printType(te, false, level, mapping)) +
+        "]"
+    );
+}
+
+function getTypeWithoutTypeArguments(type: Type, typeText: string): string {
+    // we need special handling for arrays and readonly arrays to always
+    // parse them correctly
+    if (isArray(type)) {
+        return "Array";
+    } else if (isReadonlyArray(type)) {
+        return "ReadonlyArray";
+    } else {
+        return typeText.substring(0, Math.max(typeText.indexOf("<"), 0));
+    }
+}
+
 function printAliasOrReference(
     type: Type,
     expandType: boolean,
@@ -181,13 +213,13 @@ function printAliasOrReference(
     const typeText = type.getText(undefined, TypeFormatFlags.None);
 
     // the type has no type arguments, it can just be returned
-    if (typeArguments.length === 0) {
+    if (typeArguments.length === 0 || type.isTuple()) {
         return typeText;
     }
 
-    const typeTextWithoutParams = typeText.substring(
-        0,
-        Math.max(typeText.indexOf("<"), 0)
+    const typeTextWithoutArguments = getTypeWithoutTypeArguments(
+        type,
+        typeText
     );
 
     // if type parameters are present, we have to follow them recursively, since
@@ -195,7 +227,7 @@ function printAliasOrReference(
     const mappedArguments = typeArguments
         .map((arg) => printType(arg, false, 0, mapping))
         .join(", ");
-    return typeTextWithoutParams + "<" + mappedArguments + ">";
+    return typeTextWithoutArguments + "<" + mappedArguments + ">";
 }
 
 /*
@@ -210,6 +242,8 @@ export function printType(
     const type = tryToReplaceTypeByGenericType(typeToPrint, mapping);
     if (type.isUnionOrIntersection()) {
         return printUnionOrIntersection(type, expandType, level, mapping);
+    } else if (type.isTuple()) {
+        return printTuple(type, expandType, level, mapping);
     } else if (isInterface(type)) {
         return printInterface(type, expandType, level, mapping);
     } else if (isObjectType(type)) {

@@ -19,6 +19,11 @@ export abstract class ParentDirective<T> extends GrandParentDirective<
     TestInterface<T>,
     string
 > {
+    @Input()
+    set setterWithTupleElement(
+        arr: Array<[string, number]> | ReadonlyArray<string>
+    ) {}
+
     @Input() test?: X<T>;
     /**
      * This is an input in the parent directive. It should also be
@@ -32,9 +37,9 @@ export abstract class ParentDirective<T> extends GrandParentDirective<
      * @default "someValue"
      */
     @Input()
-    set parentSetterInput(value: string) {}
+    set parentSetterInput(value: T[]) {}
     get parentSetterInput() {
-        return "";
+        return [];
     }
 
     /**
@@ -46,6 +51,8 @@ export abstract class ParentDirective<T> extends GrandParentDirective<
     @Input() genericTypeParameterInput?: EventEmitter<T>;
 
     @Input() literalGenericObjectInput?: { literalX: T };
+
+    @Input() inputWithoutExplicitType = 4;
 
     /**
      * This is some method with a generic parameter

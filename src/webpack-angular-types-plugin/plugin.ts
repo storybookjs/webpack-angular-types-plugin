@@ -1,4 +1,4 @@
-import { Project } from "ts-morph";
+import { ModuleKind, Project, ScriptTarget } from "ts-morph";
 import { Compiler, Module } from "webpack";
 import { DEFAULT_TS_CONFIG_PATH, PLUGIN_NAME } from "../constants";
 import {
@@ -43,10 +43,11 @@ export class WebpackAngularTypesPlugin {
             });
             compilation.hooks.seal.tap(PLUGIN_NAME, () => {
                 const smallTsProject = new Project({
-                    tsConfigFilePath: DEFAULT_TS_CONFIG_PATH,
-                    skipLoadingLibFiles: true,
-                    skipAddingFilesFromTsConfig: true,
-                    skipFileDependencyResolution: true,
+                    // TODO this should be taken from the specified storybook tsconfig in the future
+                    compilerOptions: {
+                        module: ModuleKind.ES2020,
+                        target: ScriptTarget.ESNext,
+                    },
                 });
                 const modulesToProcess = this.moduleQueue
                     .map((module) => this.getProcessableModule(module))

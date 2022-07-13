@@ -92,8 +92,29 @@ export function isFunctionType(type: Type): boolean {
     return type.getCallSignatures().length > 0;
 }
 
+export function isArray(type: Type): boolean {
+    return !!type.getSymbol()?.getDeclaredType().isArray();
+}
+
+export function isReadonlyArray(type: Type): boolean {
+    return (
+        !type.isUnionOrIntersection() &&
+        !!type.getSymbol()?.getDeclaredType().getText().startsWith("readonly")
+    );
+}
+
 export function isInterface(type: Type): boolean {
-    return !!type.getSymbol()?.getDeclaredType()?.isInterface();
+    const declaredType = type.getSymbol()?.getDeclaredType();
+    return !!declaredType?.isInterface() && !declaredType.isArray();
+}
+
+function isTypeFromNodeModules(symbol?: TsMorphSymbol): boolean {
+    if (!symbol) {
+        return false;
+    }
+    return symbol
+        .getDeclarations()
+        .some((decl) => decl.getSourceFile().isInNodeModules());
 }
 
 function isTypeAlreadyCollected(
@@ -169,7 +190,11 @@ function handleInterface(
 ): void {
     // only handle interfaces if they are defined in the own project and not in any third-party-library
     const symbol = type.getSymbolOrThrow();
-    if (symbol.getFullyQualifiedName().indexOf("node_modules") === -1) {
+    if (
+        !isArray(type) &&
+        !isReadonlyArray(type) &&
+        !isTypeFromNodeModules(symbol)
+    ) {
         addGenericTypeMappingsForSymbol(type, mapping);
         const typeToPrint = type.getSymbolOrThrow().getDeclaredType();
         const typeDetail = typeToTypeDetail(typeToPrint, "interface", mapping);
@@ -267,12 +292,7 @@ function handleAliasTypeArguments(
     mapping: GenericTypeMapping
 ): void {
     for (const arg of type.getAliasTypeArguments()) {
-        generateTypeDetailCollection(
-            arg,
-            typeDetailCollection,
-            level + 1,
-            mapping
-        );
+        generateTypeDetailCollection(arg, typeDetailCollection, level, mapping);
     }
 }
 
@@ -283,12 +303,7 @@ function handleTypeArguments(
     mapping: GenericTypeMapping
 ): void {
     for (const arg of type.getTypeArguments()) {
-        generateTypeDetailCollection(
-            arg,
-            typeDetailCollection,
-            level + 1,
-            mapping
-        );
+        generateTypeDetailCollection(arg, typeDetailCollection, level, mapping);
     }
 }
 
@@ -318,14 +333,17 @@ export function generateTypeDetailCollection(
         handleTypeArguments(t, typeDetailCollection, level, mapping);
     }
 
+    // do not follow external types
     if (
-        (type.getSymbol()?.getFullyQualifiedName().indexOf("node_modules") ||
-            -1) > -1 ||
-        (type
-            .getAliasSymbol()
-            ?.getFullyQualifiedName()
-            .indexOf("nodes_modules") || -1) > -1
+        isTypeFromNodeModules(type.getSymbol()) ||
+        isTypeFromNodeModules(type.getAliasSymbol())
     ) {
+        return typeDetailCollection;
+    }
+
+    // do not follow arrays and readonly arrays even though they are declared as
+    // interfaces
+    if (isArray(type) || isReadonlyArray(type)) {
         return typeDetailCollection;
     }
 
