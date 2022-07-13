@@ -4,6 +4,7 @@
     "types": ["node"],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
+    "strict": true,
     "module": "es2020",
     "target": "esnext"
   },

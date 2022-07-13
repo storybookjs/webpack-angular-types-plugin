@@ -51,6 +51,8 @@ export class ChildComponent extends ParentDirective<string> {
      */
     objectValue = {};
 
+    focusEvent?: FocusEvent;
+
     /**
      * Uninitialized value of type function or undefined.
      */
@@ -129,11 +131,13 @@ export class ChildComponent extends ParentDirective<string> {
      */
     // eslint-disable-next-line @angular-eslint/no-input-rename
     @Input("setterInputWithAlias")
-    set setterInput(value: boolean) {}
+    set setterInput(value: string[]) {}
 
     get setterInput() {
-        return false;
+        return [];
     }
+
+    @Input() alternativeArrayInput?: string[];
 
     @Input() arrayInput?: Array<string>;
 
