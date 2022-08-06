@@ -1,28 +1,22 @@
-import { ClassDeclaration, Project, SyntaxKind, Type } from "ts-morph";
+import { ClassDeclaration, Project, SyntaxKind, Type } from 'ts-morph';
 import {
-    ClassInformation,
-    EntitiesByCategory,
-    Entity,
-    GenericTypeMapping,
-    TsMorphSymbol,
-} from "../../types";
-import { groupBy } from "../utils";
-import {
-    collectBaseClasses,
-    extractComponentOrDirectiveAnnotatedClasses,
-} from "./ast-utils";
-import { mapToEntity } from "./declaration-mappers";
-import { addGenericTypeMappings } from "./type-details";
+	ClassInformation,
+	EntitiesByCategory,
+	Entity,
+	GenericTypeMapping,
+	TsMorphSymbol,
+} from '../../types';
+import { groupBy } from '../utils';
+import { collectBaseClasses, extractComponentOrDirectiveAnnotatedClasses } from './ast-utils';
+import { mapToEntity } from './declaration-mappers';
+import { addGenericTypeMappings } from './type-details';
 
 /**
  * Checks whether a getter/setter input is already present in the given map
  */
-function getterOrSetterInputExists(
-    entities: Map<string, Entity>,
-    name: string
-): boolean {
-    const entity = entities.get(name);
-    return !!entity && entity.kind === "input";
+function getterOrSetterInputExists(entities: Map<string, Entity>, name: string): boolean {
+	const entity = entities.get(name);
+	return !!entity && entity.kind === 'input';
 }
 
 /**
@@ -46,89 +40,77 @@ function getterOrSetterInputExists(
  * This information can later be used to map properties in base-classes to the
  * actual type that is available when creating type-docs for a subClass.
  */
-function extractGenericTypesFromClass(
-    classDeclarations: ClassDeclaration[]
-): GenericTypeMapping {
-    const result = new WeakMap<TsMorphSymbol, Type>();
-    for (const classDeclaration of classDeclarations) {
-        const targetTypeArguments =
-            classDeclaration
-                .getExtends()
-                ?.getTypeArguments()
-                .map((a) => a.getType()) || [];
-        const baseClass = classDeclaration.getBaseClass();
-        const sourceTypeArguments =
-            baseClass?.getTypeParameters().map((p) => p.getType()) || [];
-        addGenericTypeMappings(
-            targetTypeArguments,
-            sourceTypeArguments,
-            result
-        );
-    }
-    return result;
+function extractGenericTypesFromClass(classDeclarations: ClassDeclaration[]): GenericTypeMapping {
+	const result = new WeakMap<TsMorphSymbol, Type>();
+	for (const classDeclaration of classDeclarations) {
+		const targetTypeArguments =
+			classDeclaration
+				.getExtends()
+				?.getTypeArguments()
+				.map((a) => a.getType()) || [];
+		const baseClass = classDeclaration.getBaseClass();
+		const sourceTypeArguments = baseClass?.getTypeParameters().map((p) => p.getType()) || [];
+		addGenericTypeMappings(targetTypeArguments, sourceTypeArguments, result);
+	}
+	return result;
 }
 
 const ANGULAR_LIFECYCLE_HOOKS = [
-    "ngOnInit",
-    "ngOnChanges",
-    "ngAfterContentInit",
-    "ngAfterViewInit",
-    "ngOnDestroy",
-    "ngDoCheck",
-    "ngAfterContentChecked",
-    "ngAfterViewChecked",
+	'ngOnInit',
+	'ngOnChanges',
+	'ngAfterContentInit',
+	'ngAfterViewInit',
+	'ngOnDestroy',
+	'ngDoCheck',
+	'ngAfterContentChecked',
+	'ngAfterViewChecked',
 ];
 
 function isAngularLifeCycleHook(name: string): boolean {
-    return ANGULAR_LIFECYCLE_HOOKS.includes(name);
+	return ANGULAR_LIFECYCLE_HOOKS.includes(name);
 }
 
 /*
  * Collects all class entities (properties, getters, setters, methods) of a classDeclaration
  */
 function getClassEntities(
-    classDeclaration: ClassDeclaration,
-    propertiesToExclude: RegExp | undefined,
-    genericTypeMapping: GenericTypeMapping
+	classDeclaration: ClassDeclaration,
+	propertiesToExclude: RegExp | undefined,
+	genericTypeMapping: GenericTypeMapping,
 ): Map<string, Entity> {
-    const properties = classDeclaration.getProperties();
-    const setters = classDeclaration.getSetAccessors();
-    const getters = classDeclaration.getGetAccessors();
-    const methods = classDeclaration.getMethods();
+	const properties = classDeclaration.getProperties();
+	const setters = classDeclaration.getSetAccessors();
+	const getters = classDeclaration.getGetAccessors();
+	const methods = classDeclaration.getMethods();
 
-    const entities = new Map<string, Entity>();
+	const entities = new Map<string, Entity>();
 
-    for (const declaration of [
-        ...properties,
-        ...setters,
-        ...getters,
-        ...methods,
-    ]) {
-        // do not include the entity if is private/protected
-        if (
-            declaration.hasModifier(SyntaxKind.PrivateKeyword) ||
-            declaration.hasModifier(SyntaxKind.ProtectedKeyword) ||
-            isAngularLifeCycleHook(declaration.getName())
-        ) {
-            continue;
-        }
+	for (const declaration of [...properties, ...setters, ...getters, ...methods]) {
+		// do not include the entity if is private/protected
+		if (
+			declaration.hasModifier(SyntaxKind.PrivateKeyword) ||
+			declaration.hasModifier(SyntaxKind.ProtectedKeyword) ||
+			isAngularLifeCycleHook(declaration.getName())
+		) {
+			continue;
+		}
 
-        // do not include the property if it passes the exclusion test
-        if (propertiesToExclude?.test(declaration.getName())) {
-            continue;
-        }
-        const entity = mapToEntity({ declaration, genericTypeMapping });
+		// do not include the property if it passes the exclusion test
+		if (propertiesToExclude?.test(declaration.getName())) {
+			continue;
+		}
+		const entity = mapToEntity({ declaration, genericTypeMapping });
 
-        // If there already is an input getter/setter declaration, do not overwrite
-        // the existing mapping
-        if (getterOrSetterInputExists(entities, entity.name)) {
-            continue;
-        }
+		// If there already is an input getter/setter declaration, do not overwrite
+		// the existing mapping
+		if (getterOrSetterInputExists(entities, entity.name)) {
+			continue;
+		}
 
-        entities.set(entity.name, entity);
-    }
+		entities.set(entity.name, entity);
+	}
 
-    return entities;
+	return entities;
 }
 
 /*
@@ -136,25 +118,23 @@ function getClassEntities(
  * in decreasing priority, i.e. fields from class entities at the end of the input
  * array are overridden by class entities on a lower index on the input array.
  */
-export function mergeClassEntities(
-    classEntities: Map<string, Entity>[]
-): Map<string, Entity> {
-    if (classEntities.length === 1) {
-        return classEntities[0];
-    }
-    const result = new Map<string, Entity>();
+export function mergeClassEntities(classEntities: Map<string, Entity>[]): Map<string, Entity> {
+	if (classEntities.length === 1) {
+		return classEntities[0];
+	}
+	const result = new Map<string, Entity>();
 
-    for (let i = classEntities.length - 1; i > -1; i--) {
-        const entitiesToMerge = classEntities[i];
-        for (const entityToMerge of entitiesToMerge.values()) {
-            if (getterOrSetterInputExists(result, entityToMerge.name)) {
-                continue;
-            }
+	for (let i = classEntities.length - 1; i > -1; i--) {
+		const entitiesToMerge = classEntities[i];
+		for (const entityToMerge of entitiesToMerge.values()) {
+			if (getterOrSetterInputExists(result, entityToMerge.name)) {
+				continue;
+			}
 
-            result.set(entityToMerge.name, entityToMerge);
-        }
-    }
-    return result;
+			result.set(entityToMerge.name, entityToMerge);
+		}
+	}
+	return result;
 }
 
 /*
@@ -162,44 +142,38 @@ export function mergeClassEntities(
  * all angular-related (component/directive) classes in this source-file
  */
 export function generateClassInformation(
-    filepath: string,
-    project: Project,
-    propertiesToExclude: RegExp | undefined
+	filepath: string,
+	project: Project,
+	propertiesToExclude: RegExp | undefined,
 ): ClassInformation[] {
-    const sourceFile = project.getSourceFile(filepath);
-    if (!sourceFile) {
-        return [];
-    }
-    const annotatedClassDeclarations =
-        extractComponentOrDirectiveAnnotatedClasses(sourceFile);
-    const result: ClassInformation[] = [];
-    for (const classDeclaration of annotatedClassDeclarations) {
-        const baseClasses = collectBaseClasses(classDeclaration);
-        const allClasses = [classDeclaration, ...baseClasses];
-        const genericTypeMapping = extractGenericTypesFromClass(allClasses);
-        const classEntities = allClasses.map(
-            (classDeclaration: ClassDeclaration) =>
-                getClassEntities(
-                    classDeclaration,
-                    propertiesToExclude,
-                    genericTypeMapping
-                )
-        );
-        const mergedClassEntities = mergeClassEntities(classEntities);
-        const name = classDeclaration.getName();
+	const sourceFile = project.getSourceFile(filepath);
+	if (!sourceFile) {
+		return [];
+	}
+	const annotatedClassDeclarations = extractComponentOrDirectiveAnnotatedClasses(sourceFile);
+	const result: ClassInformation[] = [];
+	for (const classDeclaration of annotatedClassDeclarations) {
+		const baseClasses = collectBaseClasses(classDeclaration);
+		const allClasses = [classDeclaration, ...baseClasses];
+		const genericTypeMapping = extractGenericTypesFromClass(allClasses);
+		const classEntities = allClasses.map((classDeclaration: ClassDeclaration) =>
+			getClassEntities(classDeclaration, propertiesToExclude, genericTypeMapping),
+		);
+		const mergedClassEntities = mergeClassEntities(classEntities);
+		const name = classDeclaration.getName();
 
-        // do not generate type info for anonymous classes
-        if (!name) {
-            continue;
-        }
-        result.push({
-            name,
-            modulePath: filepath,
-            entitiesByCategory: groupBy(
-                mergedClassEntities,
-                (entity) => entity.kind
-            ) as EntitiesByCategory,
-        });
-    }
-    return result;
+		// do not generate type info for anonymous classes
+		if (!name) {
+			continue;
+		}
+		result.push({
+			name,
+			modulePath: filepath,
+			entitiesByCategory: groupBy(
+				mergedClassEntities,
+				(entity) => entity.kind,
+			) as EntitiesByCategory,
+		});
+	}
+	return result;
 }
