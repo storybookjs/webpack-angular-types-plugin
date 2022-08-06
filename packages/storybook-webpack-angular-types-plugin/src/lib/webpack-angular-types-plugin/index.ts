@@ -1,1 +1,1 @@
-export { WebpackAngularTypesPlugin } from "./plugin";
+export { WebpackAngularTypesPlugin } from './plugin';

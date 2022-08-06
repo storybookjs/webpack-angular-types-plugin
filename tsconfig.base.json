@@ -1,27 +1,27 @@
 {
-  "compileOnSave": false,
-  "compilerOptions": {
-    "rootDir": ".",
-    "sourceMap": true,
-    "declaration": false,
-    "moduleResolution": "node",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "importHelpers": true,
-    "target": "es2015",
-    "module": "esnext",
-    "lib": ["es2017", "dom"],
-    "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "storybook-webpack-angular-types-plugin": [
-        "packages/storybook-webpack-angular-types-plugin/index.ts"
-      ],
-      "storybook-webpack-angular-types-plugin/extract-arg-types": [
-        "packages/storybook-webpack-angular-types-plugin/extract-arg-types.ts"
-      ]
-    }
-  },
-  "exclude": ["node_modules", "tmp"]
+	"compileOnSave": false,
+	"compilerOptions": {
+		"rootDir": ".",
+		"sourceMap": true,
+		"declaration": false,
+		"moduleResolution": "node",
+		"emitDecoratorMetadata": true,
+		"experimentalDecorators": true,
+		"importHelpers": true,
+		"target": "es2015",
+		"module": "esnext",
+		"lib": ["es2017", "dom"],
+		"skipLibCheck": true,
+		"skipDefaultLibCheck": true,
+		"baseUrl": ".",
+		"paths": {
+			"storybook-webpack-angular-types-plugin": [
+				"packages/storybook-webpack-angular-types-plugin/index.ts"
+			],
+			"storybook-webpack-angular-types-plugin/extract-arg-types": [
+				"packages/storybook-webpack-angular-types-plugin/extract-arg-types.ts"
+			]
+		}
+	},
+	"exclude": ["node_modules", "tmp"]
 }
