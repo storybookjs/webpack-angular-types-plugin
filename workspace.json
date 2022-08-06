@@ -1,0 +1,8 @@
+{
+  "$schema": "./node_modules/nx/schemas/workspace-schema.json",
+  "version": 2,
+  "projects": {
+    "angular-demo": "packages/angular-demo",
+    "storybook-webpack-angular-types-plugin": "packages/storybook-webpack-angular-types-plugin"
+  }
+}

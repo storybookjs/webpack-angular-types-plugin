@@ -1,0 +1,47 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/storybook-webpack-angular-types-plugin/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/storybook-webpack-angular-types-plugin",
+        "main": "packages/storybook-webpack-angular-types-plugin/src/index.ts",
+        "tsConfig": "packages/storybook-webpack-angular-types-plugin/tsconfig.lib.json",
+        "assets": ["packages/storybook-webpack-angular-types-plugin/*.md"]
+      }
+    },
+    "publish": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "command": "node tools/scripts/publish.mjs storybook-webpack-angular-types-plugin {args.ver} {args.tag}"
+      },
+      "dependsOn": [
+        {
+          "projects": "self",
+          "target": "build"
+        }
+      ]
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": [
+          "packages/storybook-webpack-angular-types-plugin/**/*.ts"
+        ]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/packages/storybook-webpack-angular-types-plugin"],
+      "options": {
+        "jestConfig": "packages/storybook-webpack-angular-types-plugin/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}

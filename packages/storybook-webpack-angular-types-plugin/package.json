@@ -1,0 +1,12 @@
+{
+  "name": "storybook-webpack-angular-types-plugin",
+  "version": "0.0.1",
+  "type": "commonjs",
+  "dependencies": {
+    "ts-morph": "^15.1.0"
+  },
+  "peerDependencies": {
+    "@storybook/components": "^6.5.10",
+    "webpack": "^5.74.0"
+  }
+}
