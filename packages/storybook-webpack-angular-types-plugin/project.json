@@ -14,7 +14,7 @@
 			}
 		},
 		"publish": {
-			"executor": "@nrwl/workspace:run-commands",
+			"executor": "nx:run-commands",
 			"options": {
 				"command": "node tools/scripts/publish.mjs storybook-webpack-angular-types-plugin {args.ver} {args.tag}"
 			},
@@ -34,7 +34,7 @@
 		},
 		"test": {
 			"executor": "@nrwl/jest:jest",
-			"outputs": ["coverage/packages/storybook-webpack-angular-types-plugin"],
+			"outputs": ["{workspaceRoot}/coverage/packages/storybook-webpack-angular-types-plugin"],
 			"options": {
 				"jestConfig": "packages/storybook-webpack-angular-types-plugin/jest.config.ts",
 				"passWithNoTests": true
