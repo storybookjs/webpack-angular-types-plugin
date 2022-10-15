@@ -76,7 +76,7 @@
 		},
 		"test": {
 			"executor": "@nrwl/jest:jest",
-			"outputs": ["coverage/packages/angular-demo"],
+			"outputs": ["{workspaceRoot}/coverage/packages/angular-demo"],
 			"options": {
 				"jestConfig": "packages/angular-demo/jest.config.ts",
 				"passWithNoTests": true
