@@ -45,7 +45,8 @@ const mapEntitiesToArgsTableProps = (entitiesByCategory: EntitiesByCategory): Ex
 	const argsTableProps: ExtendedArgType[] = [];
 
 	for (const [categoryKey, entities] of Object.entries<Entity[]>(entitiesByCategory)) {
-		for (const entity of entities) {
+		const sortedEntities = entities.sort((a: Entity, b: Entity) => (a.alias ?? a.name).localeCompare(b.alias ?? b.name));
+		for (const entity of sortedEntities) {
 			argsTableProps.push(mapEntityToArgsTableProp(entity, categoryKey));
 		}
 	}
