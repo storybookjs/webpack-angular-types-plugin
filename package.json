@@ -1,11 +1,13 @@
 {
   "name": "storybook-webpack-angular-types-plugin",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "license": "MIT",
   "scripts": {
     "start-demo": "nx serve angular-demo:storybook",
     "build": "nx build storybook-webpack-angular-types-plugin",
     "build:watch": "nx build storybook-webpack-angular-types-plugin -- --watch",
+	"sync-package-json-version": "node tools/scripts/copy-root-package-json-version.js",
+	"sync-plugin-package-json-dependencies": "node tools/scripts/sync-storybook-webpack-angular-types-plugin-dependencies-to-dist.js",
     "postinstall": "ngcc --properties es2020 browser module main"
   },
   "private": true,
