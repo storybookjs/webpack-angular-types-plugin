@@ -16,7 +16,7 @@
 		"publish": {
 			"executor": "nx:run-commands",
 			"options": {
-				"command": "node tools/scripts/publish.mjs storybook-webpack-angular-types-plugin {args.ver} {args.tag}"
+				"command": "npm run sync-package-json-version && npm run sync-plugin-package-json-dependencies && node tools/scripts/publish.mjs storybook-webpack-angular-types-plugin {args.ver} {args.tag}"
 			},
 			"dependsOn": [
 				{
