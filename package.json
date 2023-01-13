@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "start-demo": "nx serve angular-demo:storybook",
-	"build": "nx build storybook-webpack-angular-types-plugin -- --watch",
+	"build:watch": "nx build storybook-webpack-angular-types-plugin -- --watch",
     "postinstall": "ngcc --properties es2020 browser module main"
   },
   "private": true,
