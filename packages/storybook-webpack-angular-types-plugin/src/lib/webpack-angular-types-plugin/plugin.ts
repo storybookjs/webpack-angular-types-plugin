@@ -1,4 +1,4 @@
-import { ModuleKind, Project, ScriptTarget } from 'ts-morph';
+import { ModuleKind, ModuleResolutionKind, Project, ScriptTarget } from 'ts-morph';
 import { Compiler, Module } from 'webpack';
 import { DEFAULT_TS_CONFIG_PATH, PLUGIN_NAME } from '../constants';
 import { ClassInformation, ModuleInformation, WebpackAngularTypesPluginOptions } from '../types';
@@ -37,6 +37,7 @@ export class WebpackAngularTypesPlugin {
 					compilerOptions: {
 						module: ModuleKind.ES2020,
 						target: ScriptTarget.ESNext,
+						moduleResolution: ModuleResolutionKind.NodeJs,
 					},
 				});
 				const modulesToProcess = this.moduleQueue
