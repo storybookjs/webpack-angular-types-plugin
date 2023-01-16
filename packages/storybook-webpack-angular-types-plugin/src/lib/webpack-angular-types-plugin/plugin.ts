@@ -1,3 +1,7 @@
+import { getTsconfig } from 'get-tsconfig';
+import * as micromatch from 'micromatch';
+import * as path from 'path';
+import * as process from 'process';
 import { ModuleKind, ModuleResolutionKind, Project, ScriptTarget } from 'ts-morph';
 import { Compiler, Module } from 'webpack';
 import { DEFAULT_TS_CONFIG_PATH, PLUGIN_NAME } from '../constants';
@@ -12,17 +16,9 @@ export class WebpackAngularTypesPlugin {
 	// A queue for modules, that should be processed by the plugin in the next seal-hook
 	private moduleQueue: Module[] = [];
 
-	// A dummy tsProject that is used to gather the glob-paths from the "include"
-	// field of the tsconfig file (therefore all dependency resolution etc is skipped)
-	// TODO maybe this can be replaced with a super-fast glob implementation
-	private tsProject = new Project({
-		tsConfigFilePath: DEFAULT_TS_CONFIG_PATH,
-		skipLoadingLibFiles: true,
-		skipFileDependencyResolution: true,
-	});
+	private readonly tsconfigPaths: string[] = this.getTsconfigPaths();
 
 	constructor(private options: WebpackAngularTypesPluginOptions = {}) {}
-
 	apply(compiler: Compiler) {
 		compiler.hooks.compilation.tap(PLUGIN_NAME, (compilation) => {
 			compilation.dependencyTemplates.set(CodeDocDependency, new CodeDocDependencyTemplate());
@@ -78,19 +74,14 @@ export class WebpackAngularTypesPlugin {
 
 	private isModuleProcessable(module: Module): boolean {
 		const filePath = module.nameForCondition();
+		return !!filePath && filePath.endsWith('.ts') && this.isPathIncludedInTsConfig(filePath);
+	}
 
-		// Skip null values (e.g. raw files)
-		if (!filePath) {
-			return false;
-		}
-
-		// Only add modules that are part of the tsProject
-		// noinspection RedundantIfStatementJS
-		if (!this.tsProject.getSourceFile(filePath) || !filePath.endsWith('.ts')) {
-			return false;
-		}
-
-		return true;
+	private isPathIncludedInTsConfig(pathToCheck: string): boolean {
+		const res = micromatch([pathToCheck], this.tsconfigPaths, {
+			format: this.toUnixPath,
+		});
+		return res.length === 1;
 	}
 
 	private getProcessableModule(module: Module): ModuleInformation | null {
@@ -103,5 +94,35 @@ export class WebpackAngularTypesPlugin {
 			module,
 			path: filePath,
 		};
+	}
+
+	private getTsconfigPaths(): string[] {
+		const tsconfigPath = this.options.tsconfigPath ?? DEFAULT_TS_CONFIG_PATH;
+		const tsconfigResult = getTsconfig(tsconfigPath);
+		//
+		const tsConfigRootDir = path.join(process.cwd(), tsconfigPath, '..');
+		const includedPaths = tsconfigResult?.config.include || [];
+		const excludedPaths = tsconfigResult?.config.exclude || [];
+		return [
+			...this.transformToAbsolutePaths(tsConfigRootDir, includedPaths),
+			...this.transformToAbsolutePaths(tsConfigRootDir, excludedPaths).map(this.negateGlob),
+		].map(this.toUnixPath);
+	}
+
+	private transformToAbsolutePaths(base: string, paths: string[]): string[] {
+		return paths.map((p) => {
+			if (path.isAbsolute(p)) {
+				return p;
+			}
+			return path.join(base, p);
+		});
+	}
+
+	private negateGlob(glob: string): string {
+		return `!${glob}`;
+	}
+
+	private toUnixPath(path: string): string {
+		return path.replaceAll('\\', '/');
 	}
 }

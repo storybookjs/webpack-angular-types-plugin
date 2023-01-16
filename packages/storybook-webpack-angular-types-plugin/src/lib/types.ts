@@ -10,6 +10,7 @@ import { Module } from 'webpack';
 
 export interface WebpackAngularTypesPluginOptions {
 	excludeProperties?: RegExp;
+	tsconfigPath?: string;
 }
 
 export type EntityModifier = 'getter' | 'setter';

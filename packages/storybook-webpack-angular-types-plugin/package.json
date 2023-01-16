@@ -3,7 +3,9 @@
 	"version": "0.0.1",
 	"type": "commonjs",
 	"dependencies": {
-		"ts-morph": "^15.1.0"
+		"ts-morph": "^15.1.0",
+		"get-tsconfig": "^4.3.0",
+		"micromatch": "^4.0.5"
 	},
 	"peerDependencies": {
 		"@storybook/components": "^6.5.10",

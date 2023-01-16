@@ -20,7 +20,11 @@ module.exports = {
 		}
 
 		// add your own webpack tweaks if needed
-		config.plugins.push(new WebpackAngularTypesPlugin());
+		config.plugins.push(
+			new WebpackAngularTypesPlugin({
+				tsconfigPath: './packages/angular-demo/.storybook/tsconfig.json',
+			}),
+		);
 
 		return config;
 	},
