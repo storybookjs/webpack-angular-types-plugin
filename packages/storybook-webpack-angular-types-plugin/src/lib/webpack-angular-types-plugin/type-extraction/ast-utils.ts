@@ -24,7 +24,9 @@ export function extractComponentOrDirectiveAnnotatedClasses(
 			(classDeclaration: ClassDeclaration) =>
 				!!(
 					classDeclaration.getDecorator('Component') ||
-					classDeclaration.getDecorator('Directive')
+					classDeclaration.getDecorator('Directive') ||
+					classDeclaration.getDecorator('Pipe') ||
+					classDeclaration.getDecorator('Injectable')
 				),
 		)
 		.filter((classDeclaration: ClassDeclaration) => !classDeclaration.isAbstract())
