@@ -1,15 +1,10 @@
-import { ClassDeclaration, Project, SyntaxKind, Type } from 'ts-morph';
-import {
-	ClassInformation,
-	EntitiesByCategory,
-	Entity,
-	GenericTypeMapping,
-	TsMorphSymbol,
-} from '../../types';
+import { ClassDeclaration, GetAccessorDeclaration, MethodDeclaration, Project, PropertyDeclaration, SetAccessorDeclaration, SyntaxKind, Type } from 'ts-morph';
+import { ClassInformation, EntitiesByCategory, Entity, GenericTypeMapping, TsMorphSymbol } from '../../types';
 import { groupBy } from '../utils';
 import { collectBaseClasses, extractComponentOrDirectiveAnnotatedClasses } from './ast-utils';
 import { mapToEntity } from './declaration-mappers';
 import { addGenericTypeMappings } from './type-details';
+import { Node } from 'ts-morph';
 
 /**
  * Checks whether a getter/setter input is already present in the given map
@@ -55,19 +50,34 @@ function extractGenericTypesFromClass(classDeclarations: ClassDeclaration[]): Ge
 	return result;
 }
 
-const ANGULAR_LIFECYCLE_HOOKS = [
-	'ngOnInit',
-	'ngOnChanges',
-	'ngAfterContentInit',
-	'ngAfterViewInit',
-	'ngOnDestroy',
-	'ngDoCheck',
-	'ngAfterContentChecked',
-	'ngAfterViewChecked',
-];
+const BUILT_IN_ANGULAR_METHODS: { methodName: string, interfaceName: string }[] = [
+	{ methodName: 'ngOnInit', interfaceName: 'OnInit' },
+	{ methodName: 'ngOnChanges', interfaceName: 'OnChanges'},
+	{ methodName: 'ngAfterContentInit', interfaceName: 'AfterContentInit' },
+	{ methodName: 'ngAfterViewInit', interfaceName: 'AfterViewInit' },
+	{ methodName: 'ngOnDestroy', interfaceName: 'OnDestroy' },
+	{ methodName: 'ngDoCheck', interfaceName: 'DoCheck'},
+	{ methodName: 'ngAfterContentChecked', interfaceName: 'AfterContentChecked'},
+	{ methodName: 'ngAfterViewChecked', interfaceName: 'AfterViewChecked'},
+	{ methodName: 'writeValue', interfaceName: 'ControlValueAccessor'},
+	{ methodName: 'registerOnChange', interfaceName: 'ControlValueAccessor'},
+	{ methodName: 'registerOnTouched', interfaceName: 'ControlValueAccessor'},
+	{ methodName: 'setDisabledState', interfaceName: 'ControlValueAccessor' },
+	{ methodName: 'validate', interfaceName: 'Validator'},
+	{ methodName: 'registerOnValidatorChange', interfaceName: 'Validator'},
+]
 
-function isAngularLifeCycleHook(name: string): boolean {
-	return ANGULAR_LIFECYCLE_HOOKS.includes(name);
+function isBuiltinAngularMethod(classDecl: ClassDeclaration, methodName: string): boolean {
+	const candidate = BUILT_IN_ANGULAR_METHODS.find(builtInMethod => builtInMethod.methodName === methodName);
+	if (!candidate) {
+		return false;
+	}
+	const isImplemented = classDecl.getImplements().find(implement => implement.getText() === candidate.interfaceName);
+	return !!isImplemented;
+}
+
+function isExcludedViaJsDocs(declaration: PropertyDeclaration | SetAccessorDeclaration | GetAccessorDeclaration | MethodDeclaration): boolean {
+	return declaration.getJsDocs().some(jsDoc => jsDoc.getInnerText().includes('@exclude-docs'))
 }
 
 /*
@@ -90,7 +100,9 @@ function getClassEntities(
 		if (
 			declaration.hasModifier(SyntaxKind.PrivateKeyword) ||
 			declaration.hasModifier(SyntaxKind.ProtectedKeyword) ||
-			isAngularLifeCycleHook(declaration.getName())
+			(Node.isMethodDeclaration(declaration) &&
+				isBuiltinAngularMethod(classDeclaration, declaration.getName())) ||
+			isExcludedViaJsDocs(declaration)
 		) {
 			continue;
 		}
