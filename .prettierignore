@@ -1,2 +1,4 @@
 dist
 .angular/cache
+
+/.nx/cache
