@@ -1,10 +1,11 @@
 {
+	"name": "storybook-webpack-angular-types-plugin",
 	"$schema": "../../node_modules/nx/schemas/project-schema.json",
 	"sourceRoot": "packages/storybook-webpack-angular-types-plugin/src",
 	"projectType": "library",
 	"targets": {
 		"build": {
-			"executor": "@nrwl/js:tsc",
+			"executor": "@nx/js:tsc",
 			"outputs": ["{options.outputPath}"],
 			"options": {
 				"outputPath": "dist/packages/storybook-webpack-angular-types-plugin",
@@ -20,20 +21,19 @@
 			},
 			"dependsOn": [
 				{
-					"projects": "self",
 					"target": "build"
 				}
 			]
 		},
 		"lint": {
-			"executor": "@nrwl/linter:eslint",
+			"executor": "@nx/linter:eslint",
 			"outputs": ["{options.outputFile}"],
 			"options": {
 				"lintFilePatterns": ["packages/storybook-webpack-angular-types-plugin/**/*.ts"]
 			}
 		},
 		"test": {
-			"executor": "@nrwl/jest:jest",
+			"executor": "@nx/jest:jest",
 			"outputs": ["{workspaceRoot}/coverage/packages/storybook-webpack-angular-types-plugin"],
 			"options": {
 				"jestConfig": "packages/storybook-webpack-angular-types-plugin/jest.config.ts",
