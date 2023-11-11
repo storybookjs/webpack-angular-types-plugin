@@ -1,31 +1,33 @@
 {
 	"$schema": "./node_modules/nx/schemas/nx-schema.json",
-	"npmScope": "storybook-webpack-angular-types-plugin",
 	"affected": {
 		"defaultBase": "main"
-	},
-	"tasksRunnerOptions": {
-		"default": {
-			"runner": "nx-cloud",
-			"options": {
-				"cacheableOperations": ["build", "lint", "test", "e2e"],
-				"accessToken": "ZmRhMDRhNDAtNzRlOS00Mzc5LTg0NjEtNjM0MTQ5NmMwOGU3fHJlYWQtd3JpdGU="
-			}
-		}
 	},
 	"targetDefaults": {
 		"build": {
 			"dependsOn": ["^build"],
-			"inputs": ["production", "^production"]
+			"inputs": ["production", "^production"],
+			"cache": true
 		},
 		"test": {
-			"inputs": ["default", "^default", "{workspaceRoot}/jest.preset.js"]
+			"inputs": ["default", "^default", "{workspaceRoot}/jest.preset.js"],
+			"cache": true
 		},
 		"lint": {
-			"inputs": ["default", "{workspaceRoot}/.eslintrc.json"]
+			"inputs": ["default", "{workspaceRoot}/.eslintrc.json"],
+			"cache": true
 		},
 		"build-storybook": {
-			"inputs": ["default", "^default", "{workspaceRoot}/.storybook/**/*"]
+			"inputs": [
+				"default",
+				"^default",
+				"{workspaceRoot}/.storybook/**/*",
+				"{projectRoot}/.storybook/**/*",
+				"{projectRoot}/tsconfig.storybook.json"
+			]
+		},
+		"e2e": {
+			"cache": true
 		}
 	},
 	"workspaceLayout": {
@@ -51,6 +53,13 @@
 	"namedInputs": {
 		"default": ["{projectRoot}/**/*", "sharedGlobals"],
 		"sharedGlobals": [],
-		"production": ["default"]
-	}
+		"production": [
+			"default",
+			"!{projectRoot}/src/test-setup.[jt]s",
+			"!{projectRoot}/**/*.stories.@(js|jsx|ts|tsx|mdx)",
+			"!{projectRoot}/.storybook/**/*",
+			"!{projectRoot}/tsconfig.storybook.json"
+		]
+	},
+	"nxCloudAccessToken": "ZmRhMDRhNDAtNzRlOS00Mzc5LTg0NjEtNjM0MTQ5NmMwOGU3fHJlYWQtd3JpdGU="
 }
