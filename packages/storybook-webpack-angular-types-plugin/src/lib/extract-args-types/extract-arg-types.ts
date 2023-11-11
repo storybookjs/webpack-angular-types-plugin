@@ -1,7 +1,47 @@
-import { ArgType, TableAnnotation } from '@storybook/components';
 import { STORYBOOK_ANGULAR_ARG_TYPES, STORYBOOK_COMPONENT_ID } from '../constants';
-import { EntitiesByCategory, Entity } from '../types';
+import { EntitiesByCategory, Entity, JsDocParam } from '../types';
+import { Conditional } from '@storybook/types';
 
+/**
+ * TODO During the update from Storybook 6 to Storybook 7.5, these types were not available anymore.
+ * Discuss proper solution and replace these interfaces afterwards
+ */
+
+export interface JsDocParamDeprecated {
+	deprecated?: string;
+}
+
+export interface JsDocReturns {
+	description?: string;
+}
+
+export interface JsDocTags {
+	params?: JsDocParam[];
+	deprecated?: JsDocParamDeprecated;
+	returns?: JsDocReturns;
+}
+export interface PropSummaryValue {
+	summary: string;
+	detail?: string;
+	required?: boolean;
+}
+
+export type PropType = PropSummaryValue;
+
+export interface TableAnnotation {
+	type: PropType;
+	jsDocTags?: JsDocTags;
+	defaultValue?: PropDefaultValue;
+	category?: string;
+}
+export type PropDefaultValue = PropSummaryValue;
+export interface ArgType {
+	name?: string;
+	description?: string;
+	defaultValue?: any;
+	if?: Conditional;
+	[key: string]: any;
+}
 // See https://github.com/storybookjs/storybook/blob/f4b3a880e7f00bd1b28e7691d45bcc1c41b1cafe/lib/components/src/blocks/ArgsTable/types.ts
 interface ExtendedArgType extends ArgType {
 	table: TableAnnotation;
