@@ -1,12 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { ArgsTable, Meta, Canvas, Story } from '@storybook/addon-docs';
 import { moduleMetadata } from '@storybook/angular';
-import { AppModule } from '../app.module';
 import { ChildComponent } from '../child.component';
 
 <Meta
 	title="Example component"
-	decorators={[moduleMetadata({ imports: [CommonModule, AppModule] })]}
+	decorators={[moduleMetadata({ imports: [CommonModule] })]}
 />
 
 # Example component
