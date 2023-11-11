@@ -1,4 +1,6 @@
 {
+	"name": "angular-demo",
+	"$schema": "../../node_modules/nx/schemas/project-schema.json",
 	"projectType": "application",
 	"sourceRoot": "packages/angular-demo/src",
 	"prefix": "storybook-webpack-angular-types-plugin",
@@ -13,7 +15,10 @@
 				"polyfills": "packages/angular-demo/src/polyfills.ts",
 				"tsConfig": "packages/angular-demo/tsconfig.app.json",
 				"inlineStyleLanguage": "scss",
-				"assets": ["packages/angular-demo/src/favicon.ico", "packages/angular-demo/src/assets"],
+				"assets": [
+					"packages/angular-demo/src/favicon.ico",
+					"packages/angular-demo/src/assets"
+				],
 				"styles": ["packages/angular-demo/src/styles.scss"],
 				"scripts": []
 			},
@@ -69,13 +74,16 @@
 			}
 		},
 		"lint": {
-			"executor": "@nrwl/linter:eslint",
+			"executor": "@nx/linter:eslint",
 			"options": {
-				"lintFilePatterns": ["packages/angular-demo/**/*.ts", "packages/angular-demo/**/*.html"]
+				"lintFilePatterns": [
+					"packages/angular-demo/**/*.ts",
+					"packages/angular-demo/**/*.html"
+				]
 			}
 		},
 		"test": {
-			"executor": "@nrwl/jest:jest",
+			"executor": "@nx/jest:jest",
 			"outputs": ["{workspaceRoot}/coverage/packages/angular-demo"],
 			"options": {
 				"jestConfig": "packages/angular-demo/jest.config.ts",
