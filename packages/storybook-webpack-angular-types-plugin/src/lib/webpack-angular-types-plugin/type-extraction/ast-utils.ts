@@ -1,8 +1,11 @@
 import {
 	ClassDeclaration,
 	DecoratableNode,
+	InterfaceDeclaration,
+	JSDoc,
 	JSDocableNode,
 	JSDocTag,
+	Node,
 	PropertyDeclaration,
 	SetAccessorDeclaration,
 	SourceFile,
@@ -11,26 +14,46 @@ import {
 import { JsDocParam } from '../../types';
 import { stripQuotes } from '../utils';
 
-/*
- * Collects all ClassDeclarations from the given SourceFile that have a
- * @Component() or @Directive decorator
+/**
+ * Collects all Class- and InterfaceDeclarations from the given SourceFile that have a
+ * @Component(), @Directive(), @Pipe() or @Injectable() decorator or ar annotated with
+ * "@include-docs".
  */
-export function extractComponentOrDirectiveAnnotatedClasses(
-	sourceFile: SourceFile,
-): ClassDeclaration[] {
+export function extractSupportedTypes(sourceFile: SourceFile): {
+	classDeclarations: ClassDeclaration[];
+	interfaceDeclarations: InterfaceDeclaration[];
+} {
+	const classDeclarations = getClassDeclarations(sourceFile);
+	const interfaceDeclarations = getInterfaceDeclarations(sourceFile);
+
+	return { classDeclarations, interfaceDeclarations };
+}
+
+function getClassDeclarations(sourceFile: SourceFile): ClassDeclaration[] {
 	return sourceFile
 		.getClasses()
 		.filter(
 			(classDeclaration: ClassDeclaration) =>
-				!!(
+				!classDeclaration.isAbstract() &&
+				(!!(
 					classDeclaration.getDecorator('Component') ||
 					classDeclaration.getDecorator('Directive') ||
 					classDeclaration.getDecorator('Pipe') ||
 					classDeclaration.getDecorator('Injectable')
-				),
+				) ||
+					hasJsDocsTag(classDeclaration.getJsDocs(), 'include-docs')) &&
+				!hasJsDocsTag(classDeclaration.getJsDocs(), 'exclude-docs'),
 		)
-		.filter((classDeclaration: ClassDeclaration) => !classDeclaration.isAbstract())
 		.reduce((acc: ClassDeclaration[], val: ClassDeclaration) => acc.concat(val), []);
+}
+
+function getInterfaceDeclarations(sourceFile: SourceFile): InterfaceDeclaration[] {
+	return sourceFile
+		.getInterfaces()
+		.filter((interfaceDeclaration: InterfaceDeclaration) =>
+			hasJsDocsTag(interfaceDeclaration.getJsDocs(), 'include-docs'),
+		)
+		.reduce((acc: InterfaceDeclaration[], val: InterfaceDeclaration) => acc.concat(val), []);
 }
 
 /*
@@ -49,7 +72,7 @@ export function retrieveInputOutputDecoratorAlias(node: DecoratableNode): string
 	return undefined;
 }
 
-/*
+/**
  * Gets the jsDocs description of a node.
  */
 export function getJsDocsDescription(node: JSDocableNode): string | undefined {
@@ -67,6 +90,16 @@ export function getJsDocsParams(node: JSDocableNode): JsDocParam[] {
 			.filter((tag) => tag.getTagName() === 'param')
 			.map((tag) => getJsDocParam(tag)) || []
 	);
+}
+
+/**
+ * Checks if jsDocs contain a specific tag
+ * @param jsDocs JSDocs array
+ * @param tagName name of the JSDoc tag
+ */
+export function hasJsDocsTag(jsDocs: JSDoc[], tagName: string): boolean {
+	const jsDocParams = jsDocs.flatMap((jsDoc) => jsDoc.getTags().flatMap((t) => t.getTagName()));
+	return jsDocParams.includes(tagName);
 }
 
 /**
@@ -104,10 +137,10 @@ function getJsDocParam(tag: JSDocTag): JsDocParam {
 	};
 }
 
-/*
+/**
  * Gets a @default param which acts as an override of the initializer of a node
  */
-export function getJsDocsDefaultValueOverride(node: JSDocableNode): string | undefined {
+export function getJsDocsDefaultValue(node: JSDocableNode): string | undefined {
 	return node
 		.getJsDocs()[0]
 		?.getTags()
@@ -115,7 +148,7 @@ export function getJsDocsDefaultValueOverride(node: JSDocableNode): string | und
 		?.getCommentText();
 }
 
-/*
+/**
  * Checks if the given type is required. This is either the case when the optional
  * modifier (?) is omitted, or when "undefined" is part of the root level type
  * (either type = undefined or type = typeA | undefined | typeB)
@@ -134,7 +167,7 @@ export function isTypeRequired(type: Type): boolean {
 	return true;
 }
 
-/*
+/**
  * Given a starting ClassDeclaration, recursively collect all base classes
  * (and the base classes of the base classes etc.).
  */
@@ -146,6 +179,30 @@ export function collectBaseClasses(cls: ClassDeclaration): ClassDeclaration[] {
 		currentClass = currentClass.getBaseClass();
 	}
 	return bases;
+}
+
+/**
+ * Given a starting InterfaceDeclaration, recursively collect all base types
+ */
+export function collectBaseInterfaces(
+	interfaceDeclaration: InterfaceDeclaration,
+): InterfaceDeclaration[] {
+	const baseInterfaceDeclarations: InterfaceDeclaration[] = [];
+
+	let currentDeclarations = interfaceDeclaration.getBaseDeclarations();
+	while (currentDeclarations.length) {
+		const innerDeclarations: InterfaceDeclaration[] = [];
+		for (const currentDeclaration of currentDeclarations) {
+			if (Node.isInterfaceDeclaration(currentDeclaration)) {
+				baseInterfaceDeclarations.push(currentDeclaration);
+				innerDeclarations.push(currentDeclaration);
+			}
+		}
+		currentDeclarations = innerDeclarations.flatMap((declaration) =>
+			declaration.getBaseDeclarations(),
+		);
+	}
+	return baseInterfaceDeclarations;
 }
 
 /**
@@ -163,7 +220,7 @@ export function getDefaultValue(
 	decl: PropertyDeclaration | SetAccessorDeclaration,
 ): string | undefined {
 	// check for defaultValue override
-	const defaultValueOverride = getJsDocsDefaultValueOverride(decl);
+	const defaultValueOverride = getJsDocsDefaultValue(decl);
 	if (defaultValueOverride) {
 		return defaultValueOverride;
 	}

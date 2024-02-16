@@ -22,7 +22,7 @@ function requestIdForClassName(className: string): number {
 	}
 }
 
-export function getGlobalUniqueIdForClass(moduleId: WebpackModuleId, className: string): number {
+export function getGlobalUniqueId(moduleId: WebpackModuleId, className: string): number {
 	if (!moduleClassRegistries.has(moduleId)) {
 		moduleClassRegistries.set(moduleId, new Map());
 	}

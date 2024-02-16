@@ -1,6 +1,16 @@
 /* eslint-disable */
 // noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols,JSMethodCanBeStatic
-import { AfterContentInit, AfterViewInit, Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output } from '@angular/core';
+import {
+	AfterContentInit,
+	AfterViewInit,
+	Component,
+	EventEmitter,
+	Input,
+	OnChanges,
+	OnDestroy,
+	OnInit,
+	Output,
+} from '@angular/core';
 import { AbstractControl, ControlValueAccessor, ValidationErrors, Validator } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { ParentDirective } from './parent.directive';
@@ -10,7 +20,18 @@ import { NestedInterface, TestInterface, TestObjectType, TestType } from './type
 	selector: 'app-child',
 	template: `Child works`,
 })
-export class ChildComponent extends ParentDirective<string> implements OnInit, OnChanges, OnDestroy, AfterViewInit, AfterContentInit, OnDestroy, Validator, ControlValueAccessor {
+export class ChildComponent
+	extends ParentDirective<string>
+	implements
+		OnInit,
+		OnChanges,
+		OnDestroy,
+		AfterViewInit,
+		AfterContentInit,
+		OnDestroy,
+		Validator,
+		ControlValueAccessor
+{
 	/**
 	 * Uninitialized value of string | undefined type.
 	 */
@@ -186,7 +207,7 @@ export class ChildComponent extends ParentDirective<string> implements OnInit, O
 	}
 
 	protected protectedMethod(val: string): string {
-		return ''
+		return '';
 	}
 
 	/**
@@ -194,26 +215,19 @@ export class ChildComponent extends ParentDirective<string> implements OnInit, O
 	 *
 	 * @exclude-docs
 	 */
-	public methodExcludedViaDocs(): void {
-
-	}
+	public methodExcludedViaDocs(): void {}
 
 	validate(control: AbstractControl): ValidationErrors | null {
-		return null
+		return null;
 	}
 
-	registerOnChange(fn: any): void {
-	}
+	registerOnChange(fn: any): void {}
 
-	registerOnTouched(fn: any): void {
-	}
+	registerOnTouched(fn: any): void {}
 
-	registerOnValidatorChange(fn: () => void): void {
-	}
+	registerOnValidatorChange(fn: () => void): void {}
 
-	setDisabledState(isDisabled: boolean): void {
-	}
+	setDisabledState(isDisabled: boolean): void {}
 
-	writeValue(obj: any): void {
-	}
+	writeValue(obj: any): void {}
 }

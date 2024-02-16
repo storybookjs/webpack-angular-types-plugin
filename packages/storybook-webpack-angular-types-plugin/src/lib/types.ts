@@ -1,7 +1,9 @@
 import {
 	GetAccessorDeclaration,
 	MethodDeclaration,
+	MethodSignature,
 	PropertyDeclaration,
+	PropertySignature,
 	SetAccessorDeclaration,
 	Symbol as TsSymbol,
 	Type,
@@ -36,12 +38,16 @@ export interface Entity {
 }
 
 export const _Categories = ['inputs', 'outputs', 'properties', 'methods'] as const;
-export type Categories = typeof _Categories[number];
+export type Categories = (typeof _Categories)[number];
 export type EntitiesByCategory = {
 	[category in Categories]: Entity[];
 };
 
-export interface ClassInformation {
+export type ClassInformation = CommonClassLikeInformation;
+
+export type InterfaceInformation = CommonClassLikeInformation;
+
+interface CommonClassLikeInformation {
 	name: string;
 	modulePath: string;
 	entitiesByCategory: EntitiesByCategory;
@@ -66,11 +72,15 @@ export type TsMorphSymbol = TsSymbol;
 
 export type GenericTypeMapping = WeakMap<TsMorphSymbol, Type>;
 
-export interface EntityMappingParams {
+export interface DeclarationToEntityMappingParams {
 	declaration:
 		| PropertyDeclaration
 		| SetAccessorDeclaration
 		| GetAccessorDeclaration
 		| MethodDeclaration;
 	genericTypeMapping: GenericTypeMapping;
+}
+
+export interface SignatureToEntityMappingParams {
+	signature: PropertySignature | MethodSignature;
 }
