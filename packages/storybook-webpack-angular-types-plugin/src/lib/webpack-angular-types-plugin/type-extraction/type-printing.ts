@@ -125,12 +125,12 @@ function printFunction(
 	if (!expandType && type.getAliasSymbol()) {
 		return printAliasOrReference(type, expandType, level, mapping);
 	}
-	const css = type.getCallSignatures();
+	const signatures = type.getCallSignatures();
 	const res: string[] = [];
-	for (const cs of css) {
-		const retTypeString = printType(cs.getReturnType(), false, level, mapping);
+	for (const callSignature of signatures) {
+		const retTypeString = printType(callSignature.getReturnType(), false, level, mapping);
 		const paramStrings: string[] = [];
-		for (const param of cs.getParameters()) {
+		for (const param of callSignature.getParameters()) {
 			const paramName = param.getName();
 			const paramType = printType(
 				param.getValueDeclaration()?.getType() || param.getDeclaredType(),
@@ -141,9 +141,10 @@ function printFunction(
 			const paramString = `${paramName}: ${paramType}`;
 			paramStrings.push(paramString);
 		}
-		const csString = `(${paramStrings.join(', ')}): ${retTypeString};`;
-		res.push(csString);
+		const signatureString = `(${paramStrings.join(', ')}): ${retTypeString};`;
+		res.push(signatureString);
 	}
+	// TODO new line is currently ignored by ArgsTable, find workaround
 	return res.join('\n');
 }
 

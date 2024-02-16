@@ -7,11 +7,11 @@ interface ExtendedArgType extends ArgType {
 	table: TableAnnotation;
 }
 
-type DirectiveType<TDirective> = new (...args: unknown[]) => TDirective;
+type Type<T> = new (...args: unknown[]) => T;
 
-const getAngularDirectiveEntities = (componentId: string): EntitiesByCategory | undefined => {
+const getEntities = (id: string): EntitiesByCategory | undefined => {
 	// eslint-disable-next-line
-	return (window as any)[STORYBOOK_ANGULAR_ARG_TYPES][componentId];
+	return (window as any)[STORYBOOK_ANGULAR_ARG_TYPES][id];
 };
 
 const mapEntityToArgsTableProp = (entity: Entity, category: string): ExtendedArgType => ({
@@ -27,11 +27,7 @@ const mapEntityToArgsTableProp = (entity: Entity, category: string): ExtendedArg
 		category: category,
 		jsDocTags: {
 			params: entity.jsDocParams,
-			returns: entity.jsDocReturn
-				? {
-						description: entity.jsDocReturn,
-				  }
-				: undefined,
+			returns: entity.jsDocReturn ? { description: entity.jsDocReturn } : undefined,
 		},
 		type: {
 			summary: entity.type || '',
@@ -45,7 +41,9 @@ const mapEntitiesToArgsTableProps = (entitiesByCategory: EntitiesByCategory): Ex
 	const argsTableProps: ExtendedArgType[] = [];
 
 	for (const [categoryKey, entities] of Object.entries<Entity[]>(entitiesByCategory)) {
-		const sortedEntities = entities.sort((a: Entity, b: Entity) => (a.alias ?? a.name).localeCompare(b.alias ?? b.name));
+		const sortedEntities = entities.sort((a: Entity, b: Entity) =>
+			(a.alias ?? a.name).localeCompare(b.alias ?? b.name),
+		);
 		for (const entity of sortedEntities) {
 			argsTableProps.push(mapEntityToArgsTableProp(entity, categoryKey));
 		}
@@ -54,10 +52,11 @@ const mapEntitiesToArgsTableProps = (entitiesByCategory: EntitiesByCategory): Ex
 	return argsTableProps;
 };
 
-export const extractArgTypes = <TDirective>(
-	directive: DirectiveType<TDirective>,
-): ArgType[] | undefined => {
-	const entities = getAngularDirectiveEntities(directive.prototype[STORYBOOK_COMPONENT_ID]);
+export const extractArgTypes = <T>(type: Type<T>): ArgType[] | undefined => {
+	const entities =
+		typeof type === 'string'
+			? getEntities(type)
+			: getEntities(type.prototype[STORYBOOK_COMPONENT_ID]);
 	if (!entities) {
 		return;
 	}

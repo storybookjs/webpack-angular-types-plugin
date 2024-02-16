@@ -22,7 +22,7 @@ export function wrapInCurlyBraces(input: string, inline: boolean): string {
 	}
 }
 
-export function componentWithIdString(componentName: string, id: number): string {
+export function classWithIdString(componentName: string, id: number): string {
 	return `${componentName}-${id}`;
 }
 

@@ -1,6 +1,3 @@
-import { Component, Input } from '@angular/core';
-import { getProductNumber, Product, UndocumentedSecret } from './interface';
-
 export interface UndocumentedSecret {
 	secret: string;
 }
@@ -25,6 +22,11 @@ export interface Item {
 
 	name: string;
 
+	/**
+	 * Whether the product is currently in stock
+	 *
+	 * @default false
+	 */
 	isInStock?: boolean;
 	description?: string;
 	size?: Size3;
@@ -58,28 +60,6 @@ export interface Price {
 	unit: '€' | '$';
 }
 
-@Component({
-	selector: 'app-root',
-	templateUrl: './app.component.html',
-	styleUrls: ['./app.component.scss'],
-})
-export class AppComponent {
-	@Input() testInput = '';
-	@Input() testInput2 = '123123';
-	@Input() testInput3 = '123123';
-
-	title = 'angular-app';
-
-	product: Product = {
-		id: 100123,
-		itemNumber: 100123,
-		name: 'Tooth brush',
-		price: {
-			amount: 5.99,
-			unit: '€',
-		},
-	};
-	undocumentedSecret?: UndocumentedSecret;
-
-	productNumber = getProductNumber(this.product);
+export function getProductNumber(product: Product) {
+	return `${product.id}X${product.itemNumber}`;
 }

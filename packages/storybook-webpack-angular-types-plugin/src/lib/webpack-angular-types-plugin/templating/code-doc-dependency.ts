@@ -5,10 +5,10 @@ const codeBlockEndCommentPrefix = '//<webpack-angular-types-plugin-data-end>-';
 
 export class CodeDocDependency extends Dependency {
 	constructor(
-		public className: string,
-		public classId: number,
+		public name: string,
+		public uniqueId: number,
 		public codeDocInstructions: string,
-		public uuidCodeBlock: string,
+		public uuidCodeBlock?: string,
 	) {
 		super();
 	}
@@ -18,7 +18,7 @@ export class CodeDocDependency extends Dependency {
 		// update the hash based on the most recent content, otherwise the dependency-template will
 		// not be evaluated again
 		hash.update(
-			`${this.className}:${this.classId}:${this.codeDocInstructions}:${this.uuidCodeBlock}`,
+			`${this.name}:${this.uniqueId}:${this.codeDocInstructions}:${this.uuidCodeBlock}`,
 		);
 	}
 }
@@ -26,8 +26,8 @@ export class CodeDocDependency extends Dependency {
 export class CodeDocDependencyTemplate {
 	// eslint-disable-next-line
 	apply(myDep: CodeDocDependency, source: any) {
-		const commentStartStr = CodeDocDependencyTemplate.constructCommentStart(myDep.className);
-		const commentEndStr = CodeDocDependencyTemplate.constructCommentEnd(myDep.className);
+		const commentStartStr = CodeDocDependencyTemplate.constructCommentStart(myDep.name);
+		const commentEndStr = CodeDocDependencyTemplate.constructCommentEnd(myDep.name);
 		const insertion = CodeDocDependencyTemplate.getInsertion(
 			commentStartStr,
 			commentEndStr,
@@ -41,16 +41,21 @@ export class CodeDocDependencyTemplate {
 		endComment: string,
 		dep: CodeDocDependency,
 	): string {
-		return (
-			startComment + dep.uuidCodeBlock + '\n' + dep.codeDocInstructions + '\n' + endComment
-		);
+		let result = startComment;
+		if (dep.uuidCodeBlock) {
+			result = result.concat(`${dep.uuidCodeBlock}\n`);
+		}
+		result = result.concat(`${dep.codeDocInstructions}\n`);
+		result = result.concat(endComment);
+
+		return result;
 	}
 
-	private static constructCommentStart(className: string): string {
-		return `${codeBlockStartCommentPrefix}${className}\n`;
+	private static constructCommentStart(name: string): string {
+		return `${codeBlockStartCommentPrefix}${name}\n`;
 	}
 
-	private static constructCommentEnd(className: string): string {
-		return `${codeBlockEndCommentPrefix}${className}\n`;
+	private static constructCommentEnd(name: string): string {
+		return `${codeBlockEndCommentPrefix}${name}\n`;
 	}
 }
