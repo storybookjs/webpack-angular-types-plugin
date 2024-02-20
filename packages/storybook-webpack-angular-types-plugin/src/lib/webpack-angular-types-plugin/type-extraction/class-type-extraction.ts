@@ -1,12 +1,12 @@
 import { ClassDeclaration, Node, SyntaxKind, Type } from 'ts-morph';
 import {
-	ClassInformation,
 	EntitiesByCategory,
 	Entity,
 	GenericTypeMapping,
 	TsMorphSymbol,
+	ClassInformation,
 } from '../../types';
-import { groupBy } from '../utils';
+import { EXCLUDE_DOCS_JS_DOCS_PARAM, groupBy } from '../utils';
 import { collectBaseClasses, hasJsDocsTag } from './ast-utils';
 import { mapDeclarationToEntity } from './declaration-mappers';
 import { addGenericTypeMappings } from './type-details';
@@ -70,7 +70,7 @@ function getClassEntities(
 			declaration.hasModifier(SyntaxKind.ProtectedKeyword) ||
 			(Node.isMethodDeclaration(declaration) &&
 				isBuiltinAngularMethod(classDeclaration, declaration.getName())) ||
-			hasJsDocsTag(declaration.getJsDocs(), 'exclude-docs')
+			hasJsDocsTag(declaration, EXCLUDE_DOCS_JS_DOCS_PARAM)
 		) {
 			continue;
 		}

@@ -1,6 +1,7 @@
 import {
 	ClassDeclaration,
 	DecoratableNode,
+	FunctionDeclaration,
 	InterfaceDeclaration,
 	JSDoc,
 	JSDocableNode,
@@ -10,23 +11,27 @@ import {
 	SetAccessorDeclaration,
 	SourceFile,
 	Type,
+	VariableStatement,
 } from 'ts-morph';
-import { JsDocParam } from '../../types';
-import { stripQuotes } from '../utils';
+import { JsDocParam, DeclarationsByCategory } from '../../types';
+import {
+	EXCLUDE_DOCS_JS_DOCS_PARAM,
+	GROUP_DOCS_JS_DOCS_PARAM,
+	INCLUDE_DOCS_JS_DOCS_PARAM,
+	stripQuotes,
+} from '../utils';
 
 /**
- * Collects all Class- and InterfaceDeclarations from the given SourceFile that have a
- * @Component(), @Directive(), @Pipe() or @Injectable() decorator or ar annotated with
- * "@include-docs".
+ * Collects all declarations by category from the given SourceFile that have an Angular decorator or are
+ * annotated with "@include-docs".
  */
-export function extractSupportedTypes(sourceFile: SourceFile): {
-	classDeclarations: ClassDeclaration[];
-	interfaceDeclarations: InterfaceDeclaration[];
-} {
+export function extractSupportedTypes(sourceFile: SourceFile): DeclarationsByCategory {
 	const classDeclarations = getClassDeclarations(sourceFile);
 	const interfaceDeclarations = getInterfaceDeclarations(sourceFile);
+	const functionDeclarations = getFunctionDeclarations(sourceFile);
+	const variableStatements = getVariableStatements(sourceFile);
 
-	return { classDeclarations, interfaceDeclarations };
+	return { classDeclarations, interfaceDeclarations, functionDeclarations, variableStatements };
 }
 
 function getClassDeclarations(sourceFile: SourceFile): ClassDeclaration[] {
@@ -41,8 +46,8 @@ function getClassDeclarations(sourceFile: SourceFile): ClassDeclaration[] {
 					classDeclaration.getDecorator('Pipe') ||
 					classDeclaration.getDecorator('Injectable')
 				) ||
-					hasJsDocsTag(classDeclaration.getJsDocs(), 'include-docs')) &&
-				!hasJsDocsTag(classDeclaration.getJsDocs(), 'exclude-docs'),
+					hasJsDocsTag(classDeclaration, INCLUDE_DOCS_JS_DOCS_PARAM)) &&
+				!hasJsDocsTag(classDeclaration, EXCLUDE_DOCS_JS_DOCS_PARAM),
 		)
 		.reduce((acc: ClassDeclaration[], val: ClassDeclaration) => acc.concat(val), []);
 }
@@ -51,9 +56,27 @@ function getInterfaceDeclarations(sourceFile: SourceFile): InterfaceDeclaration[
 	return sourceFile
 		.getInterfaces()
 		.filter((interfaceDeclaration: InterfaceDeclaration) =>
-			hasJsDocsTag(interfaceDeclaration.getJsDocs(), 'include-docs'),
+			hasJsDocsTag(interfaceDeclaration, INCLUDE_DOCS_JS_DOCS_PARAM),
 		)
 		.reduce((acc: InterfaceDeclaration[], val: InterfaceDeclaration) => acc.concat(val), []);
+}
+
+function getFunctionDeclarations(sourceFile: SourceFile): FunctionDeclaration[] {
+	return sourceFile
+		.getFunctions()
+		.filter((functionDeclaration: FunctionDeclaration) =>
+			hasJsDocsTag(functionDeclaration, INCLUDE_DOCS_JS_DOCS_PARAM),
+		);
+}
+
+function getVariableStatements(sourceFile: SourceFile): VariableStatement[] {
+	return sourceFile
+		.getVariableStatements()
+		.filter(
+			(variableStatement: VariableStatement) =>
+				variableStatement.hasExportKeyword() &&
+				hasJsDocsTag(variableStatement, INCLUDE_DOCS_JS_DOCS_PARAM),
+		);
 }
 
 /*
@@ -94,10 +117,11 @@ export function getJsDocsParams(node: JSDocableNode): JsDocParam[] {
 
 /**
  * Checks if jsDocs contain a specific tag
- * @param jsDocs JSDocs array
+ * @param node node with jsDocs
  * @param tagName name of the JSDoc tag
  */
-export function hasJsDocsTag(jsDocs: JSDoc[], tagName: string): boolean {
+export function hasJsDocsTag(node: JSDocableNode, tagName: string): boolean {
+	const jsDocs = node.getJsDocs();
 	const jsDocParams = jsDocs.flatMap((jsDoc) => jsDoc.getTags().flatMap((t) => t.getTagName()));
 	return jsDocParams.includes(tagName);
 }
@@ -115,6 +139,25 @@ export function getJsDocsReturnDescription(node: JSDocableNode): string | undefi
 		return undefined;
 	}
 	return text.substring(text.indexOf(' ') + 1);
+}
+
+/**
+ * Gets the @group-docs annotation from the jsDocs of a node
+ */
+export function getJsDocsGroupDocs(node: JSDocableNode): string[] {
+	const text = node
+		.getJsDocs()[0]
+		?.getTags()
+		?.find((tag) => tag.getTagName() === GROUP_DOCS_JS_DOCS_PARAM)
+		?.getText();
+	if (!text) {
+		return [];
+	}
+	return text
+		.substring(text.indexOf(' ') + 1)
+		.split(',')
+		.map((groupBy) => groupBy.replace(/[^a-zA-Z0-9]/g, ''))
+		.filter((g) => g.length);
 }
 
 /**
@@ -234,4 +277,12 @@ export function getDefaultValue(
 		}
 	}
 	return undefined;
+}
+
+export function getVariableName(variableStatement: VariableStatement): string {
+	return variableStatement.getDeclarations()[0]?.getName() ?? '';
+}
+
+export function getVariableInitializerValue(variableStatement: VariableStatement): string {
+	return variableStatement.getDeclarations()[0]?.getInitializer()?.getText() ?? '';
 }

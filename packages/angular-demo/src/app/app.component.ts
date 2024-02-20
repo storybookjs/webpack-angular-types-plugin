@@ -1,62 +1,6 @@
 import { Component, Input } from '@angular/core';
-import { getProductNumber, Product, UndocumentedSecret } from './interface';
-
-export interface UndocumentedSecret {
-	secret: string;
-}
-
-/**
- * @include-docs
- */
-export interface Product extends Item {
-	price: Price;
-}
-
-export interface Item {
-	/**
-	 * Technical id
-	 */
-	id: number;
-
-	/**
-	 * Unique identifier
-	 */
-	itemNumber: number;
-
-	name: string;
-
-	isInStock?: boolean;
-	description?: string;
-	size?: Size3;
-	meta?: object;
-}
-
-export interface Size3 extends Size2 {
-	height: Length;
-}
-
-export interface Size2 extends Size {
-	width: Length;
-}
-
-export interface Size {
-	length: Length;
-}
-
-export interface Length {
-	size: number;
-	unit: LengthUnit;
-}
-
-export type LengthUnit = 'mm' | 'cm' | 'm';
-
-export interface Price {
-	amount: number;
-	/**
-	 * Currently only € or $ ar supported!
-	 */
-	unit: '€' | '$';
-}
+import { getProductNumber, Product, UndocumentedSecret } from './types';
+import { ENVIRONMENT, IS_STANDALONE, isNumber, isString, LIB_NAME, VERSION } from './utils';
 
 @Component({
 	selector: 'app-root',
@@ -81,5 +25,15 @@ export class AppComponent {
 	};
 	undocumentedSecret?: UndocumentedSecret;
 
+	// We need a non-type import from './types.ts' so that the file gets analyzed
 	productNumber = getProductNumber(this.product);
+
+	private LIB_NAME = LIB_NAME;
+	private VERSION = VERSION;
+	private ENVIRONMENT = ENVIRONMENT;
+
+	private IS_NUMBER = isNumber;
+	private IS_STRING = isString;
+
+	private IS_STANDALONE = IS_STANDALONE;
 }

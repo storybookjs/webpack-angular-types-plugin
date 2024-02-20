@@ -2,7 +2,7 @@
 // noinspection JSUnusedLocalSymbols
 
 import { Directive, EventEmitter, Input } from '@angular/core';
-import { TestInterface } from './types';
+import { TestInterface } from './internal-types';
 
 interface X<T> {
 	x: T;

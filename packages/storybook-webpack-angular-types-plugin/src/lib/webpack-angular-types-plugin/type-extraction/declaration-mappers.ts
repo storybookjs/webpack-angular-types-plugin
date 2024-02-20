@@ -1,8 +1,10 @@
 import {
+	FunctionDeclaration,
 	GetAccessorDeclaration,
 	MethodDeclaration,
 	PropertyDeclaration,
 	SetAccessorDeclaration,
+	VariableStatement,
 } from 'ts-morph';
 import {
 	Entity,
@@ -13,9 +15,12 @@ import {
 } from '../../types';
 import {
 	getDefaultValue,
+	getJsDocsDefaultValue,
 	getJsDocsDescription,
 	getJsDocsParams,
 	getJsDocsReturnDescription,
+	getVariableInitializerValue,
+	getVariableName,
 	isTypeRequired,
 	retrieveInputOutputDecoratorAlias,
 } from './ast-utils';
@@ -157,6 +162,36 @@ export function mapMethodDeclaration({
 		type:
 			methodDeclaration.getName() +
 			printType(methodDeclaration.getType(), false, 0, genericTypeMapping),
+		typeDetails: undefined,
+		required: false,
+	};
+}
+
+export function mapFunctionDeclaration(functionDeclaration: FunctionDeclaration): Entity {
+	return {
+		kind: 'method',
+		alias: undefined,
+		name: functionDeclaration.getName() || '',
+		defaultValue: getJsDocsDefaultValue(functionDeclaration),
+		description: getJsDocsDescription(functionDeclaration) || '',
+		jsDocParams: getJsDocsParams(functionDeclaration),
+		jsDocReturn: getJsDocsReturnDescription(functionDeclaration),
+		typeDetails: undefined,
+		required: false,
+	};
+}
+
+export function mapVariableDeclaration(variableStatement: VariableStatement): Entity {
+	return {
+		kind: 'property',
+		alias: undefined,
+		name: getVariableName(variableStatement),
+		defaultValue:
+			getJsDocsDefaultValue(variableStatement) ??
+			getVariableInitializerValue(variableStatement),
+		description: getJsDocsDescription(variableStatement) || '',
+		jsDocParams: getJsDocsParams(variableStatement),
+		jsDocReturn: getJsDocsReturnDescription(variableStatement),
 		typeDetails: undefined,
 		required: false,
 	};

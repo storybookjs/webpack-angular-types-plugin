@@ -1,12 +1,19 @@
 import {
+	ClassDeclaration,
+	ExportDeclaration,
+	FunctionDeclaration,
 	GetAccessorDeclaration,
+	InterfaceDeclaration,
 	MethodDeclaration,
 	MethodSignature,
 	PropertyDeclaration,
 	PropertySignature,
 	SetAccessorDeclaration,
+	Signature,
 	Symbol as TsSymbol,
 	Type,
+	VariableDeclaration,
+	VariableStatement,
 } from 'ts-morph';
 import { Module } from 'webpack';
 
@@ -44,13 +51,46 @@ export type EntitiesByCategory = {
 };
 
 export type ClassInformation = CommonClassLikeInformation;
-
 export type InterfaceInformation = CommonClassLikeInformation;
 
-interface CommonClassLikeInformation {
+interface CommonClassLikeInformation extends CommonInformation {
+	entitiesByCategory: EntitiesByCategory;
+}
+
+export type FunctionInformation = CommonConstantLikeInformation;
+export type ConstantInformation = CommonConstantLikeInformation;
+
+interface CommonConstantLikeInformation extends CommonInformation {
+	entity: Entity;
+	groupBy: string[];
+}
+
+interface CommonInformation {
 	name: string;
 	modulePath: string;
-	entitiesByCategory: EntitiesByCategory;
+}
+
+export interface GroupedExportInformation extends ExportsInformation {
+	name: string;
+}
+
+export interface ExportsInformation {
+	functionsInformation: FunctionInformation[];
+	constantsInformation: ConstantInformation[];
+}
+
+export interface DeclarationsByCategory {
+	classDeclarations: ClassDeclaration[];
+	interfaceDeclarations: InterfaceDeclaration[];
+	functionDeclarations: FunctionDeclaration[];
+	variableStatements: VariableStatement[];
+}
+
+export interface TypeInformationByCategory {
+	classesInformation: ClassInformation[];
+	interfacesInformation: InterfaceInformation[];
+	functionsInformation: FunctionInformation[];
+	constantsInformation: ConstantInformation[];
 }
 
 export interface TypeDetail {

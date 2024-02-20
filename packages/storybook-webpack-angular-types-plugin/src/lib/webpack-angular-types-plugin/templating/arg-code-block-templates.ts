@@ -10,7 +10,7 @@ export function getClassArgCodeBlock(className: string, id: number, types: objec
 }`;
 }
 
-export function getInterfaceArgCodeBlock(interfaceName: string, types: object) {
+export function getNonClassArgCodeBlock(interfaceName: string, types: object) {
 	return `if (window["${STORYBOOK_ANGULAR_ARG_TYPES}"] !== undefined) {
     window["${STORYBOOK_ANGULAR_ARG_TYPES}"]["${interfaceName}"] = ${JSON.stringify(types)};
 }`;

@@ -7,6 +7,10 @@ import { Compiler, Module } from 'webpack';
 import { DEFAULT_TS_CONFIG_PATH, PLUGIN_NAME } from '../constants';
 import {
 	ClassInformation,
+	ConstantInformation,
+	ExportsInformation,
+	FunctionInformation,
+	GroupedExportInformation,
 	InterfaceInformation,
 	ModuleInformation,
 	WebpackAngularTypesPluginOptions,
@@ -15,7 +19,7 @@ import { getGlobalUniqueId } from './class-id-registry';
 import { CodeDocDependency, CodeDocDependencyTemplate } from './templating/code-doc-dependency';
 import {
 	getClassArgCodeBlock,
-	getInterfaceArgCodeBlock,
+	getNonClassArgCodeBlock,
 } from './templating/arg-code-block-templates';
 import { getPrototypeClassIdCodeBlock } from './templating/prototype-class-id-code-block-template';
 import { generateTypeInformation } from './type-extraction/type-extraction';
@@ -56,21 +60,116 @@ export class WebpackAngularTypesPlugin {
 				smallTsProject.resolveSourceFileDependencies();
 
 				for (const { path, module } of modulesToProcess) {
-					const { classesInformation, interfacesInformation } = generateTypeInformation(
+					const {
+						classesInformation,
+						interfacesInformation,
+						functionsInformation,
+						constantsInformation,
+					} = generateTypeInformation(
 						path,
 						smallTsProject,
 						this.options.excludeProperties,
 					);
-					for (const ci of classesInformation) {
-						this.addClassCodeDocDependency(ci, module);
+					for (const classInformation of classesInformation) {
+						this.addClassCodeDocDependency(classInformation, module);
 					}
-					for (const ii of interfacesInformation) {
-						this.addInterfaceCodeDocDependency(ii, module);
+					for (const interfaceInformation of interfacesInformation) {
+						this.addInterfaceCodeDocDependency(interfaceInformation, module);
+					}
+
+					const groupedExportsInformation = this.groupExportInformation(
+						functionsInformation,
+						constantsInformation,
+					);
+
+					for (const groupedExportInformation of groupedExportsInformation) {
+						this.addGroupedExportsCodeDocDependency(groupedExportInformation, module);
 					}
 				}
 				this.moduleQueue = [];
 			});
 		});
+	}
+
+	/**
+	 * Functions and constants can be annotated with "@group-docs" to collect them into a
+	 * single ArgsTable. Returns information grouped by the "groupBy" property.
+	 *
+	 * @param functionsInformation list of all functions
+	 * @param constantsInformation list of all constants
+	 */
+	private groupExportInformation(
+		functionsInformation: FunctionInformation[],
+		constantsInformation: ConstantInformation[],
+	): GroupedExportInformation[] {
+		const exportsInformationMap = new Map<string, ExportsInformation>();
+
+		for (const functionInformation of functionsInformation) {
+			const name = functionInformation.name;
+
+			exportsInformationMap.set(name, {
+				functionsInformation: [functionInformation],
+				constantsInformation: [],
+			});
+
+			const groupBys = functionInformation.groupBy;
+
+			for (const groupBy of groupBys) {
+				if (groupBy) {
+					const groupByEntry = exportsInformationMap.get(groupBy);
+					if (groupByEntry) {
+						if (groupByEntry.functionsInformation.length) {
+							groupByEntry.functionsInformation.push(functionInformation);
+						} else {
+							groupByEntry.functionsInformation = [functionInformation];
+						}
+					} else {
+						exportsInformationMap.set(groupBy, {
+							functionsInformation: [functionInformation],
+							constantsInformation: [],
+						});
+					}
+				}
+			}
+		}
+
+		for (const constantInformation of constantsInformation) {
+			const name = constantInformation.name;
+			const groupBys = constantInformation.groupBy;
+
+			exportsInformationMap.set(name, {
+				functionsInformation: [],
+				constantsInformation: [constantInformation],
+			});
+
+			for (const groupBy of groupBys) {
+				if (groupBy) {
+					const groupByEntry = exportsInformationMap.get(groupBy);
+					if (groupByEntry) {
+						if (groupByEntry.constantsInformation.length) {
+							groupByEntry.constantsInformation.push(constantInformation);
+						} else {
+							groupByEntry.constantsInformation = [constantInformation];
+						}
+					} else {
+						exportsInformationMap.set(groupBy, {
+							functionsInformation: [],
+							constantsInformation: [constantInformation],
+						});
+					}
+				}
+			}
+		}
+
+		const groupedExportsInformation: GroupedExportInformation[] = [];
+		for (const [name, exportsInformation] of exportsInformationMap) {
+			groupedExportsInformation.push({
+				name,
+				functionsInformation: exportsInformation.functionsInformation,
+				constantsInformation: exportsInformation.constantsInformation,
+			});
+		}
+		return groupedExportsInformation;
 	}
 
 	// noinspection JSMethodCanBeStatic
@@ -87,12 +186,35 @@ export class WebpackAngularTypesPlugin {
 	}
 
 	// noinspection JSMethodCanBeStatic
-	private addInterfaceCodeDocDependency(ii: InterfaceInformation, module: Module): void {
-		const uniqueId = getGlobalUniqueId(module.identifier(), ii.name);
+	private addInterfaceCodeDocDependency(
+		interfaceInformation: InterfaceInformation,
+		module: Module,
+	): void {
+		const uniqueId = getGlobalUniqueId(module.identifier(), interfaceInformation.name);
 		const codeDocDependency = new CodeDocDependency(
-			ii.name,
+			interfaceInformation.name,
 			uniqueId,
-			getInterfaceArgCodeBlock(ii.name, ii.entitiesByCategory),
+			getNonClassArgCodeBlock(
+				interfaceInformation.name,
+				interfaceInformation.entitiesByCategory,
+			),
+		);
+		module.addDependency(codeDocDependency);
+	}
+
+	// noinspection JSMethodCanBeStatic
+	private addGroupedExportsCodeDocDependency(
+		groupedExportInformation: GroupedExportInformation,
+		module: Module,
+	): void {
+		const uniqueId = getGlobalUniqueId(module.identifier(), groupedExportInformation.name);
+		const codeDocDependency = new CodeDocDependency(
+			groupedExportInformation.name,
+			uniqueId,
+			getNonClassArgCodeBlock(groupedExportInformation.name, {
+				functions: groupedExportInformation.functionsInformation.map((f) => f.entity),
+				constants: groupedExportInformation.constantsInformation.map((c) => c.entity),
+			}),
 		);
 		module.addDependency(codeDocDependency);
 	}

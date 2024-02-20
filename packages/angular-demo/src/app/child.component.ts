@@ -14,7 +14,7 @@ import {
 import { AbstractControl, ControlValueAccessor, ValidationErrors, Validator } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { ParentDirective } from './parent.directive';
-import { NestedInterface, TestInterface, TestObjectType, TestType } from './types';
+import { NestedInterface, TestInterface, TestObjectType, TestType } from './internal-types';
 
 @Component({
 	selector: 'app-child',

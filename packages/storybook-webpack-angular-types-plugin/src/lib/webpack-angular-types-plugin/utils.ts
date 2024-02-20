@@ -4,6 +4,10 @@
 import { Type } from 'ts-morph';
 import { GenericTypeMapping } from '../types';
 
+export const INCLUDE_DOCS_JS_DOCS_PARAM = 'include-docs';
+export const EXCLUDE_DOCS_JS_DOCS_PARAM = 'exclude-docs';
+export const GROUP_DOCS_JS_DOCS_PARAM = 'group-docs';
+
 export function stripQuotes(input: string): string {
 	return input.replace(/^"|^'|"$|'$/g, '');
 }
