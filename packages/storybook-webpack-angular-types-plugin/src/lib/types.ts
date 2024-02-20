@@ -1,6 +1,5 @@
 import {
 	ClassDeclaration,
-	ExportDeclaration,
 	FunctionDeclaration,
 	GetAccessorDeclaration,
 	InterfaceDeclaration,
@@ -9,10 +8,8 @@ import {
 	PropertyDeclaration,
 	PropertySignature,
 	SetAccessorDeclaration,
-	Signature,
 	Symbol as TsSymbol,
 	Type,
-	VariableDeclaration,
 	VariableStatement,
 } from 'ts-morph';
 import { Module } from 'webpack';

@@ -54,10 +54,15 @@ export class WebpackAngularTypesPlugin {
 					.map((module) => this.getProcessableModule(module))
 					.filter((module): module is ModuleInformation => !!module);
 
+				const collectedFunctionsInformation: FunctionInformation[] = [];
+				const collectedConstantsInformation: ConstantInformation[] = [];
+
 				for (const { path } of modulesToProcess) {
 					smallTsProject.addSourceFileAtPath(path);
 				}
 				smallTsProject.resolveSourceFileDependencies();
+
+				let firstModuleForGroupedExports: Module | undefined = undefined;
 
 				for (const { path, module } of modulesToProcess) {
 					const {
@@ -77,15 +82,31 @@ export class WebpackAngularTypesPlugin {
 						this.addInterfaceCodeDocDependency(interfaceInformation, module);
 					}
 
+					if (
+						!firstModuleForGroupedExports &&
+						(functionsInformation.length || constantsInformation.length)
+					) {
+						firstModuleForGroupedExports = module;
+					}
+
+					collectedFunctionsInformation.push(...functionsInformation);
+					collectedConstantsInformation.push(...constantsInformation);
+				}
+
+				if (firstModuleForGroupedExports) {
 					const groupedExportsInformation = this.groupExportInformation(
-						functionsInformation,
-						constantsInformation,
+						collectedFunctionsInformation,
+						collectedConstantsInformation,
 					);
 
 					for (const groupedExportInformation of groupedExportsInformation) {
-						this.addGroupedExportsCodeDocDependency(groupedExportInformation, module);
+						this.addGroupedExportsCodeDocDependency(
+							groupedExportInformation,
+							firstModuleForGroupedExports,
+						);
 					}
 				}
+
 				this.moduleQueue = [];
 			});
 		});
@@ -105,60 +126,11 @@ export class WebpackAngularTypesPlugin {
 		const exportsInformationMap = new Map<string, ExportsInformation>();
 
 		for (const functionInformation of functionsInformation) {
-			const name = functionInformation.name;
-
-			exportsInformationMap.set(name, {
-				functionsInformation: [functionInformation],
-				constantsInformation: [],
-			});
-
-			const groupBys = functionInformation.groupBy;
-
-			for (const groupBy of groupBys) {
-				if (groupBy) {
-					const groupByEntry = exportsInformationMap.get(groupBy);
-					if (groupByEntry) {
-						if (groupByEntry.functionsInformation.length) {
-							groupByEntry.functionsInformation.push(functionInformation);
-						} else {
-							groupByEntry.functionsInformation = [functionInformation];
-						}
-					} else {
-						exportsInformationMap.set(groupBy, {
-							functionsInformation: [functionInformation],
-							constantsInformation: [],
-						});
-					}
-				}
-			}
+			this.addToGroupedExportsInformation(exportsInformationMap, { functionInformation });
 		}
 
 		for (const constantInformation of constantsInformation) {
-			const name = constantInformation.name;
-			const groupBys = constantInformation.groupBy;
-
-			exportsInformationMap.set(name, {
-				functionsInformation: [],
-				constantsInformation: [constantInformation],
-			});
-
-			for (const groupBy of groupBys) {
-				if (groupBy) {
-					const groupByEntry = exportsInformationMap.get(groupBy);
-					if (groupByEntry) {
-						if (groupByEntry.constantsInformation.length) {
-							groupByEntry.constantsInformation.push(constantInformation);
-						} else {
-							groupByEntry.constantsInformation = [constantInformation];
-						}
-					} else {
-						exportsInformationMap.set(groupBy, {
-							functionsInformation: [],
-							constantsInformation: [constantInformation],
-						});
-					}
-				}
-			}
+			this.addToGroupedExportsInformation(exportsInformationMap, { constantInformation });
 		}
 
 		const groupedExportsInformation: GroupedExportInformation[] = [];
@@ -170,6 +142,48 @@ export class WebpackAngularTypesPlugin {
 			});
 		}
 		return groupedExportsInformation;
+	}
+
+	private addToGroupedExportsInformation(
+		exportsInformationMap: Map<string, ExportsInformation>,
+		{
+			functionInformation,
+			constantInformation,
+		}:
+			| { functionInformation: FunctionInformation; constantInformation?: never }
+			| { constantInformation: ConstantInformation; functionInformation?: never },
+	): Map<string, ExportsInformation> {
+		const newExportInformation = functionInformation ?? constantInformation;
+
+		const name = newExportInformation.name;
+
+		const entryKey = functionInformation ? 'functionsInformation' : 'constantsInformation';
+
+		exportsInformationMap.set(name, {
+			functionsInformation: [],
+			constantsInformation: [],
+			[entryKey]: [newExportInformation],
+		});
+
+		const groupBys = newExportInformation.groupBy;
+
+		for (const groupBy of groupBys) {
+			const groupByEntry = exportsInformationMap.get(groupBy);
+			if (groupByEntry) {
+				if (groupByEntry[entryKey].length) {
+					groupByEntry[entryKey].push(newExportInformation);
+				} else {
+					groupByEntry[entryKey] = [newExportInformation];
+				}
+			} else {
+				exportsInformationMap.set(groupBy, {
+					functionsInformation: [],
+					constantsInformation: [],
+					[entryKey]: [newExportInformation],
+				});
+			}
+		}
+		return exportsInformationMap;
 	}
 
 	// noinspection JSMethodCanBeStatic

@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { getLibraryAuthor } from './other-utils';
 import { getProductNumber, Product, UndocumentedSecret } from './types';
 import { ENVIRONMENT, IS_STANDALONE, isNumber, isString, LIB_NAME, VERSION } from './utils';
 
@@ -31,6 +32,7 @@ export class AppComponent {
 	private LIB_NAME = LIB_NAME;
 	private VERSION = VERSION;
 	private ENVIRONMENT = ENVIRONMENT;
+	private LIB_AUTHOR = getLibraryAuthor();
 
 	private IS_NUMBER = isNumber;
 	private IS_STRING = isString;
