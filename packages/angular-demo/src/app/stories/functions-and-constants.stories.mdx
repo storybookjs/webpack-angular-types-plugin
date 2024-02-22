@@ -4,6 +4,8 @@ import { ArgsTable, Meta, Story } from '@storybook/addon-docs';
 
 # Example functions and constants
 
+Functions and constants need to be annotated with `@include-docs` for the type information to be generated.
+
 <Story name="API" />
 
 ## Functions
@@ -32,11 +34,11 @@ export function getEnvironment(): string {
 }
 ```
 
-### LibraryInfo group
+### LibraryInfo
 
 <ArgsTable of="LibraryInfo" />
 
-### EnvironmentInfo group
+### EnvironmentInfo
 
 <ArgsTable of="EnvironmentInfo" />
 

@@ -8,7 +8,6 @@ import { DEFAULT_TS_CONFIG_PATH, PLUGIN_NAME } from '../constants';
 import {
 	ClassInformation,
 	ConstantInformation,
-	ExportsInformation,
 	FunctionInformation,
 	GroupedExportInformation,
 	InterfaceInformation,
@@ -16,6 +15,7 @@ import {
 	WebpackAngularTypesPluginOptions,
 } from '../types';
 import { getGlobalUniqueId } from './class-id-registry';
+import { groupExportInformation } from './grouping/group-export-information';
 import { CodeDocDependency, CodeDocDependencyTemplate } from './templating/code-doc-dependency';
 import {
 	getClassArgCodeBlock,
@@ -94,7 +94,7 @@ export class WebpackAngularTypesPlugin {
 				}
 
 				if (firstModuleForGroupedExports) {
-					const groupedExportsInformation = this.groupExportInformation(
+					const groupedExportsInformation = groupExportInformation(
 						collectedFunctionsInformation,
 						collectedConstantsInformation,
 					);
@@ -110,80 +110,6 @@ export class WebpackAngularTypesPlugin {
 				this.moduleQueue = [];
 			});
 		});
-	}
-
-	/**
-	 * Functions and constants can be annotated with "@group-docs" to collect them into a
-	 * single ArgsTable. Returns information grouped by the "groupBy" property.
-	 *
-	 * @param functionsInformation list of all functions
-	 * @param constantsInformation list of all constants
-	 */
-	private groupExportInformation(
-		functionsInformation: FunctionInformation[],
-		constantsInformation: ConstantInformation[],
-	): GroupedExportInformation[] {
-		const exportsInformationMap = new Map<string, ExportsInformation>();
-
-		for (const functionInformation of functionsInformation) {
-			this.addToGroupedExportsInformation(exportsInformationMap, { functionInformation });
-		}
-
-		for (const constantInformation of constantsInformation) {
-			this.addToGroupedExportsInformation(exportsInformationMap, { constantInformation });
-		}
-
-		const groupedExportsInformation: GroupedExportInformation[] = [];
-		for (const [name, exportsInformation] of exportsInformationMap) {
-			groupedExportsInformation.push({
-				name,
-				functionsInformation: exportsInformation.functionsInformation,
-				constantsInformation: exportsInformation.constantsInformation,
-			});
-		}
-		return groupedExportsInformation;
-	}
-
-	private addToGroupedExportsInformation(
-		exportsInformationMap: Map<string, ExportsInformation>,
-		{
-			functionInformation,
-			constantInformation,
-		}:
-			| { functionInformation: FunctionInformation; constantInformation?: never }
-			| { constantInformation: ConstantInformation; functionInformation?: never },
-	): Map<string, ExportsInformation> {
-		const newExportInformation = functionInformation ?? constantInformation;
-
-		const name = newExportInformation.name;
-
-		const entryKey = functionInformation ? 'functionsInformation' : 'constantsInformation';
-
-		exportsInformationMap.set(name, {
-			functionsInformation: [],
-			constantsInformation: [],
-			[entryKey]: [newExportInformation],
-		});
-
-		const groupBys = newExportInformation.groupBy;
-
-		for (const groupBy of groupBys) {
-			const groupByEntry = exportsInformationMap.get(groupBy);
-			if (groupByEntry) {
-				if (groupByEntry[entryKey].length) {
-					groupByEntry[entryKey].push(newExportInformation);
-				} else {
-					groupByEntry[entryKey] = [newExportInformation];
-				}
-			} else {
-				exportsInformationMap.set(groupBy, {
-					functionsInformation: [],
-					constantsInformation: [],
-					[entryKey]: [newExportInformation],
-				});
-			}
-		}
-		return exportsInformationMap;
 	}
 
 	// noinspection JSMethodCanBeStatic
