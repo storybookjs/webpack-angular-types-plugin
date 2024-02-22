@@ -2,7 +2,7 @@
 // noinspection JSUnusedLocalSymbols
 
 import { Directive, EventEmitter, Input } from '@angular/core';
-import { TestInterface } from './types';
+import { TestInterface } from './internal-types';
 
 interface X<T> {
 	x: T;
@@ -55,5 +55,17 @@ export abstract class ParentDirective<T> extends GrandParentDirective<T, TestInt
 	 */
 	public methodWithGeneric(value: T): string {
 		return '';
+	}
+
+	/**
+	 * This method is overloaded.
+	 *
+	 * @param param
+	 */
+	overloadedMethod(param: string): string;
+	overloadedMethod(param: string, optionalParam: string | null): string;
+	overloadedMethod(param: string, optionalParam: string | undefined): string;
+	overloadedMethod(param: string, optionalParam?: string | null | undefined): string {
+		return String(param);
 	}
 }

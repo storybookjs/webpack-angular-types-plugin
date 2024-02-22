@@ -3,7 +3,7 @@ import { GenericTypeMapping, TypeDetail, TypeDetailCollection, TypeKind } from '
 import { tryToReplaceTypeByGenericType } from '../utils';
 import { printType } from './type-printing';
 
-/*
+/**
  * Checks if the given type exhibits any index signature (either number or string keys)
  */
 function handleIndexPropertiesInType(

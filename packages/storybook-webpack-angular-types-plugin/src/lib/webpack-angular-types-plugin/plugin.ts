@@ -5,12 +5,24 @@ import * as process from 'process';
 import { ModuleKind, ModuleResolutionKind, Project, ScriptTarget } from 'ts-morph';
 import { Compiler, Module } from 'webpack';
 import { DEFAULT_TS_CONFIG_PATH, PLUGIN_NAME } from '../constants';
-import { ClassInformation, ModuleInformation, WebpackAngularTypesPluginOptions } from '../types';
-import { getGlobalUniqueIdForClass } from './class-id-registry';
+import {
+	ClassInformation,
+	ConstantInformation,
+	FunctionInformation,
+	GroupedExportInformation,
+	InterfaceInformation,
+	ModuleInformation,
+	WebpackAngularTypesPluginOptions,
+} from '../types';
+import { getGlobalUniqueId } from './class-id-registry';
+import { groupExportInformation } from './grouping/group-export-information';
 import { CodeDocDependency, CodeDocDependencyTemplate } from './templating/code-doc-dependency';
-import { getComponentArgCodeBlock } from './templating/component-arg-block-code-template';
-import { getPrototypeComponentIDCodeBlock } from './templating/component-global-id-template';
-import { generateClassInformation } from './type-extraction/type-extraction';
+import {
+	getClassArgCodeBlock,
+	getNonClassArgCodeBlock,
+} from './templating/arg-code-block-templates';
+import { getPrototypeClassIdCodeBlock } from './templating/prototype-class-id-code-block-template';
+import { generateTypeInformation } from './type-extraction/type-extraction';
 
 export class WebpackAngularTypesPlugin {
 	// A queue for modules, that should be processed by the plugin in the next seal-hook
@@ -22,11 +34,13 @@ export class WebpackAngularTypesPlugin {
 	apply(compiler: Compiler) {
 		compiler.hooks.compilation.tap(PLUGIN_NAME, (compilation) => {
 			compilation.dependencyTemplates.set(CodeDocDependency, new CodeDocDependencyTemplate());
+
 			compilation.hooks.buildModule.tap(PLUGIN_NAME, (module) => {
 				if (this.isModuleProcessable(module)) {
 					this.moduleQueue.push(module);
 				}
 			});
+
 			compilation.hooks.seal.tap(PLUGIN_NAME, () => {
 				const smallTsProject = new Project({
 					// TODO this should be taken from the specified storybook tsconfig in the future
@@ -40,34 +54,107 @@ export class WebpackAngularTypesPlugin {
 					.map((module) => this.getProcessableModule(module))
 					.filter((module): module is ModuleInformation => !!module);
 
+				const collectedFunctionsInformation: FunctionInformation[] = [];
+				const collectedConstantsInformation: ConstantInformation[] = [];
+
 				for (const { path } of modulesToProcess) {
 					smallTsProject.addSourceFileAtPath(path);
 				}
 				smallTsProject.resolveSourceFileDependencies();
 
+				let firstModuleForGroupedExports: Module | undefined = undefined;
+
 				for (const { path, module } of modulesToProcess) {
-					const classInformation: ClassInformation[] = generateClassInformation(
+					const {
+						classesInformation,
+						interfacesInformation,
+						functionsInformation,
+						constantsInformation,
+					} = generateTypeInformation(
 						path,
 						smallTsProject,
 						this.options.excludeProperties,
 					);
-					for (const ci of classInformation) {
-						this.addCodeDocDependencyToClass(ci, module);
+					for (const classInformation of classesInformation) {
+						this.addClassCodeDocDependency(classInformation, module);
+					}
+					for (const interfaceInformation of interfacesInformation) {
+						this.addInterfaceCodeDocDependency(interfaceInformation, module);
+					}
+
+					if (
+						!firstModuleForGroupedExports &&
+						(functionsInformation.length || constantsInformation.length)
+					) {
+						firstModuleForGroupedExports = module;
+					}
+
+					collectedFunctionsInformation.push(...functionsInformation);
+					collectedConstantsInformation.push(...constantsInformation);
+				}
+
+				if (firstModuleForGroupedExports) {
+					const groupedExportsInformation = groupExportInformation(
+						collectedFunctionsInformation,
+						collectedConstantsInformation,
+					);
+
+					for (const groupedExportInformation of groupedExportsInformation) {
+						this.addGroupedExportsCodeDocDependency(
+							groupedExportInformation,
+							firstModuleForGroupedExports,
+						);
 					}
 				}
+
 				this.moduleQueue = [];
 			});
 		});
 	}
 
 	// noinspection JSMethodCanBeStatic
-	private addCodeDocDependencyToClass(ci: ClassInformation, module: Module): void {
-		const moduleClassId = getGlobalUniqueIdForClass(module.identifier(), ci.name);
+	private addClassCodeDocDependency(ci: ClassInformation, module: Module): void {
+		const uniqueId = getGlobalUniqueId(module.identifier(), ci.name);
 		const codeDocDependency = new CodeDocDependency(
 			ci.name,
-			moduleClassId,
-			getComponentArgCodeBlock(ci.name, moduleClassId, ci.entitiesByCategory),
-			getPrototypeComponentIDCodeBlock(ci.name, moduleClassId),
+			uniqueId,
+			getClassArgCodeBlock(ci.name, uniqueId, ci.entitiesByCategory),
+			getPrototypeClassIdCodeBlock(ci.name, uniqueId),
+		);
+
+		module.addDependency(codeDocDependency);
+	}
+
+	// noinspection JSMethodCanBeStatic
+	private addInterfaceCodeDocDependency(
+		interfaceInformation: InterfaceInformation,
+		module: Module,
+	): void {
+		const uniqueId = getGlobalUniqueId(module.identifier(), interfaceInformation.name);
+		const codeDocDependency = new CodeDocDependency(
+			interfaceInformation.name,
+			uniqueId,
+			getNonClassArgCodeBlock(
+				interfaceInformation.name,
+				interfaceInformation.entitiesByCategory,
+			),
+		);
+		module.addDependency(codeDocDependency);
+	}
+
+	// noinspection JSMethodCanBeStatic
+	private addGroupedExportsCodeDocDependency(
+		groupedExportInformation: GroupedExportInformation,
+		module: Module,
+	): void {
+		const uniqueId = getGlobalUniqueId(module.identifier(), groupedExportInformation.name);
+		const codeDocDependency = new CodeDocDependency(
+			groupedExportInformation.name,
+			uniqueId,
+			getNonClassArgCodeBlock(groupedExportInformation.name, {
+				functions: groupedExportInformation.functionsInformation.map((f) => f.entity),
+				constants: groupedExportInformation.constantsInformation.map((c) => c.entity),
+			}),
 		);
 		module.addDependency(codeDocDependency);
 	}

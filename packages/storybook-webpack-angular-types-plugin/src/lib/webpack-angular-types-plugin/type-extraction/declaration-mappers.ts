@@ -1,22 +1,33 @@
 import {
+	FunctionDeclaration,
 	GetAccessorDeclaration,
 	MethodDeclaration,
 	PropertyDeclaration,
 	SetAccessorDeclaration,
+	VariableStatement,
 } from 'ts-morph';
-import { Entity, EntityKind, EntityMappingParams, TsMorphSymbol, TypeDetail } from '../../types';
+import {
+	Entity,
+	EntityKind,
+	DeclarationToEntityMappingParams,
+	TsMorphSymbol,
+	TypeDetail,
+} from '../../types';
 import {
 	getDefaultValue,
+	getJsDocsDefaultValue,
 	getJsDocsDescription,
 	getJsDocsParams,
 	getJsDocsReturnDescription,
+	getVariableInitializerValue,
+	getVariableName,
 	isTypeRequired,
 	retrieveInputOutputDecoratorAlias,
 } from './ast-utils';
 import { generateTypeDetailCollection } from './type-details';
 import { printType, stringifyTypeDetailCollection } from './type-printing';
 
-function getEntityKind(
+function getDeclarationKind(
 	declaration:
 		| PropertyDeclaration
 		| SetAccessorDeclaration
@@ -34,24 +45,27 @@ function getEntityKind(
 	}
 }
 
-export function mapToEntity(params: EntityMappingParams): Entity {
+export function mapDeclarationToEntity(params: DeclarationToEntityMappingParams): Entity {
 	if (params.declaration instanceof PropertyDeclaration) {
-		return mapProperty(params);
+		return mapPropertyDeclaration(params);
 	} else if (params.declaration instanceof SetAccessorDeclaration) {
-		return mapSetAccessor(params);
+		return mapSetAccessorDeclaration(params);
 	} else if (params.declaration instanceof GetAccessorDeclaration) {
-		return mapGetAccessor(params);
+		return mapGetAccessorDeclaration(params);
 	} else {
-		return mapMethod(params);
+		return mapMethodDeclaration(params);
 	}
 }
 
 /*
  * Maps a ts-morph property declaration to our internal Property type
  */
-export function mapProperty({ declaration, genericTypeMapping }: EntityMappingParams): Entity {
+export function mapPropertyDeclaration({
+	declaration,
+	genericTypeMapping,
+}: DeclarationToEntityMappingParams): Entity {
 	return {
-		kind: getEntityKind(declaration),
+		kind: getDeclarationKind(declaration),
 		alias: retrieveInputOutputDecoratorAlias(declaration),
 		name: declaration.getName(),
 		defaultValue: getDefaultValue(declaration as PropertyDeclaration),
@@ -72,7 +86,10 @@ export function mapProperty({ declaration, genericTypeMapping }: EntityMappingPa
 /*
  * Maps a ts-morph set accessor declaration to our internal Property type
  */
-export function mapSetAccessor({ declaration, genericTypeMapping }: EntityMappingParams): Entity {
+export function mapSetAccessorDeclaration({
+	declaration,
+	genericTypeMapping,
+}: DeclarationToEntityMappingParams): Entity {
 	const setAccessorDeclaration = declaration as SetAccessorDeclaration;
 	const parameters = setAccessorDeclaration.getParameters();
 	const parameter = parameters.length === 1 ? parameters[0] : undefined;
@@ -80,7 +97,7 @@ export function mapSetAccessor({ declaration, genericTypeMapping }: EntityMappin
 		throw new Error('Invalid number of arguments for set accessor.');
 	}
 	return {
-		kind: getEntityKind(setAccessorDeclaration),
+		kind: getDeclarationKind(setAccessorDeclaration),
 		alias: retrieveInputOutputDecoratorAlias(setAccessorDeclaration),
 		name: setAccessorDeclaration.getName(),
 		// accessors can not have a default value
@@ -103,10 +120,13 @@ export function mapSetAccessor({ declaration, genericTypeMapping }: EntityMappin
 /*
  * Maps a ts-morph get accessor declaration to our internal Property type
  */
-export function mapGetAccessor({ declaration, genericTypeMapping }: EntityMappingParams): Entity {
+export function mapGetAccessorDeclaration({
+	declaration,
+	genericTypeMapping,
+}: DeclarationToEntityMappingParams): Entity {
 	const getAccessorDeclaration = declaration as GetAccessorDeclaration;
 	return {
-		kind: getEntityKind(getAccessorDeclaration),
+		kind: getDeclarationKind(getAccessorDeclaration),
 		alias: retrieveInputOutputDecoratorAlias(getAccessorDeclaration),
 		name: getAccessorDeclaration.getName(),
 		// accessors can not have a default value
@@ -126,10 +146,13 @@ export function mapGetAccessor({ declaration, genericTypeMapping }: EntityMappin
 	};
 }
 
-export function mapMethod({ declaration, genericTypeMapping }: EntityMappingParams): Entity {
+export function mapMethodDeclaration({
+	declaration,
+	genericTypeMapping,
+}: DeclarationToEntityMappingParams): Entity {
 	const methodDeclaration = declaration as MethodDeclaration;
 	return {
-		kind: getEntityKind(methodDeclaration),
+		kind: getDeclarationKind(methodDeclaration),
 		alias: undefined,
 		name: methodDeclaration.getName(),
 		defaultValue: undefined,
@@ -139,6 +162,36 @@ export function mapMethod({ declaration, genericTypeMapping }: EntityMappingPara
 		type:
 			methodDeclaration.getName() +
 			printType(methodDeclaration.getType(), false, 0, genericTypeMapping),
+		typeDetails: undefined,
+		required: false,
+	};
+}
+
+export function mapFunctionDeclaration(functionDeclaration: FunctionDeclaration): Entity {
+	return {
+		kind: 'method',
+		alias: undefined,
+		name: functionDeclaration.getName() || '',
+		defaultValue: getJsDocsDefaultValue(functionDeclaration),
+		description: getJsDocsDescription(functionDeclaration) || '',
+		jsDocParams: getJsDocsParams(functionDeclaration),
+		jsDocReturn: getJsDocsReturnDescription(functionDeclaration),
+		typeDetails: undefined,
+		required: false,
+	};
+}
+
+export function mapVariableDeclaration(variableStatement: VariableStatement): Entity {
+	return {
+		kind: 'property',
+		alias: undefined,
+		name: getVariableName(variableStatement),
+		defaultValue:
+			getJsDocsDefaultValue(variableStatement) ??
+			getVariableInitializerValue(variableStatement),
+		description: getJsDocsDescription(variableStatement) || '',
+		jsDocParams: getJsDocsParams(variableStatement),
+		jsDocReturn: getJsDocsReturnDescription(variableStatement),
 		typeDetails: undefined,
 		required: false,
 	};

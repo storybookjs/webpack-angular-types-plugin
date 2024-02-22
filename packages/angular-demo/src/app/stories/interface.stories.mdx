@@ -1,0 +1,24 @@
+import { ArgsTable, Meta, Story } from '@storybook/addon-docs';
+
+<Meta title="Example interface" />
+
+# Example interface
+
+<Story name="API" />
+
+## Product
+
+Interfaces need to be annotated with `@include-docs` for the type information to be generated.
+
+> **Note**
+>
+> Type-only modules (TypeScript files that only contain `type`s and `interface`s) are eliminated
+> during compilation and thus, cannot be analyzed.
+>
+> Add at least one **used** constant or function declaration to the file containing the interface.
+
+<ArgsTable of="Product" />
+
+## Undocumented secret
+
+<ArgsTable of="UndocumentedSecret" />

@@ -1,37 +1,65 @@
-export type TestType =
-	| string
-	| number
-	| boolean
-	| object
-	| undefined
-	| { a: number; b: number }
-	| (NestedInterface & { [val: string]: IndexSignatureInterface });
-
-export interface TestInterface<T> {
-	a?: string;
-	b?: number;
-	c?: object;
-	d?: boolean;
-	e?: NestedInterface;
-	f?: T;
+export interface UndocumentedSecret {
+	secret: string;
 }
 
-export interface NestedInterface {
-	prop1: string;
-	prop2: string;
+/**
+ * @include-docs
+ */
+export interface Product extends Item {
+	price: Price;
 }
 
-export interface IndexSignatureInterface {
-	prop3: string;
+export interface Item {
+	/**
+	 * Technical id
+	 */
+	id: number;
+
+	/**
+	 * Unique identifier
+	 */
+	itemNumber: number;
+
+	name: string;
+
+	/**
+	 * Whether the product is currently in stock
+	 *
+	 * @default false
+	 */
+	isInStock?: boolean;
+	description?: string;
+	size?: Size3;
+	meta?: object;
 }
 
-export type TestObjectType<T> = {
-	x: number;
-	y: number;
-	z: T;
-	nestedObjectType: NestedTestObjectType<T>;
-};
+export interface Size3 extends Size2 {
+	height: Length;
+}
 
-export type NestedTestObjectType<T> = { typeFromGrandparent: T };
+export interface Size2 extends Size {
+	width: Length;
+}
 
-export class TestClass {}
+export interface Size {
+	length: Length;
+}
+
+export interface Length {
+	size: number;
+	unit: LengthUnit;
+}
+
+export type LengthUnit = 'mm' | 'cm' | 'm';
+
+export interface Price {
+	amount: number;
+	/**
+	 * Currently only € or $ ar supported!
+	 */
+	unit: '€' | '$';
+}
+
+export function getProductNumber(product: Product) {
+	return `${product.id}X${product.itemNumber}`;
+}

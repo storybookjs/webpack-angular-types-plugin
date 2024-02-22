@@ -1,0 +1,57 @@
+import { ArgsTable, Meta, Story } from '@storybook/addon-docs';
+
+<Meta title="Example functions and constants" />
+
+# Example functions and constants
+
+Functions and constants need to be annotated with `@include-docs` for the type information to be generated.
+
+<Story name="API" />
+
+## Functions
+
+<ArgsTable of="isNumber" />
+
+<ArgsTable of="isString" />
+
+## Constants
+
+<ArgsTable of="IS_STANDALONE" />
+
+## @group-docs
+
+Group multiple exports into a single ArgsTable using the `@group-docs` annotation.
+
+```typescript
+/**
+ * Returns the current environment
+ *
+ * @include-docs
+ * @group-docs LibraryInfo, EnvironmentInfo
+ */
+export function getEnvironment(): string {
+	// ...
+}
+```
+
+### LibraryInfo
+
+<ArgsTable of="LibraryInfo" />
+
+### EnvironmentInfo
+
+<ArgsTable of="EnvironmentInfo" />
+
+### Single function
+
+<ArgsTable of="getEnvironment" />
+
+## Without @include-docs
+
+### withoutAnnotation
+
+<ArgsTable of="withoutAnnotation" />
+
+### WITHOUT_ANNOTATION
+
+<ArgsTable of="WITHOUT_ANNOTATION" />

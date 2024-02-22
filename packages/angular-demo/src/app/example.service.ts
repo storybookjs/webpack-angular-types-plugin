@@ -2,7 +2,7 @@
 // noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols,JSMethodCanBeStatic
 
 import { Injectable, OnDestroy } from '@angular/core';
-import { NestedInterface, TestInterface, TestType } from './types';
+import { NestedInterface, TestInterface, TestType } from './internal-types';
 
 @Injectable()
 export class ExampleService implements OnDestroy {
