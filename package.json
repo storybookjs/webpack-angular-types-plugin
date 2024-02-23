@@ -3,7 +3,7 @@
 	"version": "0.6.0",
 	"license": "MIT",
 	"scripts": {
-		"start-demo": "nx serve angular-demo:storybook",
+		"start-demo": "nx run angular-demo:storybook",
 		"build": "nx build storybook-webpack-angular-types-plugin",
 		"build:watch": "nx build storybook-webpack-angular-types-plugin -- --watch",
 		"sync-package-json-version": "node tools/scripts/copy-root-package-json-version.js",

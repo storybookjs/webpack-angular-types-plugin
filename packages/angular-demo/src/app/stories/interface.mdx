@@ -1,10 +1,6 @@
-import { ArgsTable, Meta, Story } from '@storybook/addon-docs';
+import { ArgTypes, Meta } from '@storybook/addon-docs';
 
-<Meta title="Example interface" />
-
-# Example interface
-
-<Story name="API" />
+<Meta title="TypeScript/Interfaces" />
 
 ## Product
 
@@ -17,8 +13,8 @@ Interfaces need to be annotated with `@include-docs` for the type information to
 >
 > Add at least one **used** constant or function declaration to the file containing the interface.
 
-<ArgsTable of="Product" />
+<ArgTypes of="Product" />
 
 ## Undocumented secret
 
-<ArgsTable of="UndocumentedSecret" />
+<ArgTypes of="UndocumentedSecret" />
