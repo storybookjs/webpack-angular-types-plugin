@@ -5,13 +5,5 @@
 	},
 	"files": ["../src/polyfills.ts", "preview.ts"],
 	"exclude": ["../**/*.spec.ts", "jest.config.ts"],
-	"include": [
-		"../src/**/*.stories.ts",
-		"../src/**/*.stories.js",
-		"../src/**/*.stories.jsx",
-		"../src/**/*.stories.tsx",
-		"../src/**/*.stories.mdx",
-		"*.js",
-		"../src/**/*.ts"
-	]
+	"include": ["../src/**/*.stories.ts", "../src/**/*.mdx", "*.js", "../src/**/*.ts"]
 }

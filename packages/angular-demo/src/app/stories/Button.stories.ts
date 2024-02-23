@@ -1,9 +1,7 @@
 // also exported from '@storybook/angular' if you can deal with breaking changes in 6.1
 import { Meta, StoryFn } from '@storybook/angular';
-import { ChildComponent } from '../child.component';
 import ButtonComponent from './button.component';
 import Button from './button.component';
-import { AppComponent } from '../app.component';
 
 // More on default export: https://storybook.js.org/docs/angular/writing-stories/introduction#default-export
 export default {
@@ -54,8 +52,3 @@ export const Small = {
 		label: 'Button',
 	},
 };
-
-// you need to reference the components for testing, otherwise they will not appear in the modules
-// after the sealing of webpack (which kinda makes sense)
-export const Test = AppComponent;
-export const Test2 = ChildComponent;

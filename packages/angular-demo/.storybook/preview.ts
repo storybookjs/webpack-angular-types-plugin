@@ -1,3 +1,4 @@
+import { Preview } from '@storybook/angular';
 import {
 	extractArgTypes,
 	STORYBOOK_ANGULAR_ARG_TYPES,
@@ -5,10 +6,14 @@ import {
 
 (window as any)[STORYBOOK_ANGULAR_ARG_TYPES] = {};
 
-export const parameters = {
-	docs: {
-		inlineStories: true,
-		extractArgTypes,
-		extractComponentDescription: undefined,
+const preview: Preview = {
+	parameters: {
+		docs: {
+			inlineStories: true,
+			extractArgTypes,
+			extractComponentDescription: undefined,
+		},
 	},
 };
+
+export default preview;
