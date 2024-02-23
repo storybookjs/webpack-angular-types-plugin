@@ -11,8 +11,7 @@
 				"outputPath": "dist/packages/storybook-webpack-angular-types-plugin",
 				"main": "packages/storybook-webpack-angular-types-plugin/src/index.ts",
 				"tsConfig": "packages/storybook-webpack-angular-types-plugin/tsconfig.lib.json",
-				"assets": ["packages/storybook-webpack-angular-types-plugin/*.md"],
-				"updateBuildableProjectDepsInPackageJson": true
+				"assets": ["packages/storybook-webpack-angular-types-plugin/*.md"]
 			}
 		},
 		"publish": {
@@ -28,17 +27,13 @@
 		},
 		"lint": {
 			"executor": "@nx/eslint:lint",
-			"outputs": ["{options.outputFile}"],
-			"options": {
-				"lintFilePatterns": ["packages/storybook-webpack-angular-types-plugin/**/*.ts"]
-			}
+			"outputs": ["{options.outputFile}"]
 		},
 		"test": {
 			"executor": "@nx/jest:jest",
 			"outputs": ["{workspaceRoot}/coverage/packages/storybook-webpack-angular-types-plugin"],
 			"options": {
-				"jestConfig": "packages/storybook-webpack-angular-types-plugin/jest.config.ts",
-				"passWithNoTests": true
+				"jestConfig": "packages/storybook-webpack-angular-types-plugin/jest.config.ts"
 			}
 		}
 	},
