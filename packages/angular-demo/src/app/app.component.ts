@@ -24,6 +24,10 @@ export class AppComponent {
 			unit: '€',
 		},
 	};
+
+	/**
+	 * @exclude-docs
+	 */
 	undocumentedSecret?: UndocumentedSecret;
 
 	// We need a non-type import from './types.ts' so that the file gets analyzed
