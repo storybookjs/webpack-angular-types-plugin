@@ -3,10 +3,10 @@
 	"version": "0.0.1",
 	"type": "commonjs",
 	"dependencies": {
-		"ts-morph": "^15.1.0",
+		"ts-morph": "^21.0.1",
 		"get-tsconfig": "^4.3.0",
 		"micromatch": "^4.0.5",
-		"@storybook/blocks": "^7.5.3"
+		"@storybook/blocks": "^8.0.0-rc.3"
 	},
 	"peerDependencies": {
 		"webpack": "^5.74.0"
