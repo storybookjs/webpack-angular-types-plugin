@@ -9,7 +9,7 @@
 			"outputs": ["{options.outputPath}"],
 			"options": {
 				"outputPath": "dist/packages/storybook-webpack-angular-types-plugin",
-				"main": "packages/storybook-webpack-angular-types-plugin/src/index.ts",
+				"main": "packages/storybook-webpack-angular-types-plugin/index.ts",
 				"tsConfig": "packages/storybook-webpack-angular-types-plugin/tsconfig.lib.json",
 				"assets": ["packages/storybook-webpack-angular-types-plugin/*.md"]
 			}
