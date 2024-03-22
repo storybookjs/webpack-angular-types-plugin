@@ -56,13 +56,12 @@ export class WebpackAngularTypesPlugin {
 
 				const collectedFunctionsInformation: FunctionInformation[] = [];
 				const collectedConstantsInformation: ConstantInformation[] = [];
+				const modulesWithFunctionsOrConstants: Module[] = [];
 
 				for (const { path } of modulesToProcess) {
 					smallTsProject.addSourceFileAtPath(path);
 				}
 				smallTsProject.resolveSourceFileDependencies();
-
-				let firstModuleForGroupedExports: Module | undefined = undefined;
 
 				for (const { path, module } of modulesToProcess) {
 					const {
@@ -81,19 +80,14 @@ export class WebpackAngularTypesPlugin {
 					for (const interfaceInformation of interfacesInformation) {
 						this.addInterfaceCodeDocDependency(interfaceInformation, module);
 					}
-
-					if (
-						!firstModuleForGroupedExports &&
-						(functionsInformation.length || constantsInformation.length)
-					) {
-						firstModuleForGroupedExports = module;
+					if (functionsInformation.length || constantsInformation.length) {
+						modulesWithFunctionsOrConstants.push(module);
 					}
-
 					collectedFunctionsInformation.push(...functionsInformation);
 					collectedConstantsInformation.push(...constantsInformation);
 				}
 
-				if (firstModuleForGroupedExports) {
+				for (const moduleWithFunctionsOrConstants of modulesWithFunctionsOrConstants) {
 					const groupedExportsInformation = groupExportInformation(
 						collectedFunctionsInformation,
 						collectedConstantsInformation,
@@ -102,7 +96,7 @@ export class WebpackAngularTypesPlugin {
 					for (const groupedExportInformation of groupedExportsInformation) {
 						this.addGroupedExportsCodeDocDependency(
 							groupedExportInformation,
-							firstModuleForGroupedExports,
+							moduleWithFunctionsOrConstants,
 						);
 					}
 				}
