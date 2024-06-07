@@ -48,7 +48,9 @@ export type EntitiesByCategory = {
 };
 
 export type ClassInformation = CommonClassLikeInformation;
-export type InterfaceInformation = CommonClassLikeInformation;
+export interface InterfaceInformation extends CommonClassLikeInformation {
+	aliases: string[];
+}
 
 interface CommonClassLikeInformation extends CommonInformation {
 	entitiesByCategory: EntitiesByCategory;

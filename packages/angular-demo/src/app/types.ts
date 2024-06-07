@@ -52,6 +52,9 @@ export interface Length {
 
 export type LengthUnit = 'mm' | 'cm' | 'm';
 
+/**
+ * @include-docs Cost,Charge
+ */
 export interface Price {
 	amount: number;
 	/**

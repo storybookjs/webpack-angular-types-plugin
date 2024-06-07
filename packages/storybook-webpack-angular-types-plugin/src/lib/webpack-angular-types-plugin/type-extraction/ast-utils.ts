@@ -3,7 +3,6 @@ import {
 	DecoratableNode,
 	FunctionDeclaration,
 	InterfaceDeclaration,
-	JSDoc,
 	JSDocableNode,
 	JSDocTag,
 	Node,
@@ -16,7 +15,6 @@ import {
 import { JsDocParam, DeclarationsByCategory } from '../../types';
 import {
 	EXCLUDE_DOCS_JS_DOCS_PARAM,
-	GROUP_DOCS_JS_DOCS_PARAM,
 	INCLUDE_DOCS_JS_DOCS_PARAM,
 	stripQuotes,
 } from '../utils';
@@ -142,13 +140,13 @@ export function getJsDocsReturnDescription(node: JSDocableNode): string | undefi
 }
 
 /**
- * Gets the @group-docs annotation from the jsDocs of a node
+ * Gets the @include-docs annotation from the jsDocs of a node
  */
-export function getJsDocsGroupDocs(node: JSDocableNode): string[] {
+export function getJsDocsIncludeDocsAliases(node: JSDocableNode): string[] {
 	const text = node
 		.getJsDocs()[0]
 		?.getTags()
-		?.find((tag) => tag.getTagName() === GROUP_DOCS_JS_DOCS_PARAM)
+		?.find((tag) => tag.getTagName() === INCLUDE_DOCS_JS_DOCS_PARAM)
 		?.getText();
 	if (!text) {
 		return [];

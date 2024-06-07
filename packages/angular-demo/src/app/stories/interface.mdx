@@ -15,6 +15,33 @@ Interfaces need to be annotated with `@include-docs` for the type information to
 
 <ArgTypes of="Product" />
 
-## Undocumented secret
+## Aliases
+
+Use `@include-docs` to specify aliases for the interface as identifiers.
+
+```typescript
+/**
+ * @include-docs Cost,Charge
+ */
+export interface Price { /* ... */ }
+```
+
+### Price
+
+<ArgTypes of="Price" />
+
+### Cost
+
+<ArgTypes of="Cost" />
+
+### Charge
+
+<ArgTypes of="Charge" />
+
+## Without @include-docs
+
+Interfaces without the `@include-docs` annotation are ignored.
+
+### UndocumentedSecret
 
 <ArgTypes of="UndocumentedSecret" />

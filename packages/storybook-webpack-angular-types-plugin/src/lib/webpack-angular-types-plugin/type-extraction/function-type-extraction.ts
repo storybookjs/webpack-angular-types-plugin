@@ -1,6 +1,6 @@
 import { FunctionInformation } from '../../types';
 import { FunctionDeclaration } from 'ts-morph';
-import { getJsDocsGroupDocs } from './ast-utils';
+import { getJsDocsIncludeDocsAliases } from './ast-utils';
 import { mapFunctionDeclaration } from './declaration-mappers';
 
 export function generateFunctionsTypeInformation(
@@ -29,6 +29,6 @@ export function generateFunctionInformation(
 		name,
 		modulePath: filePath,
 		entity: mapFunctionDeclaration(functionDeclaration),
-		groupBy: getJsDocsGroupDocs(functionDeclaration),
+		groupBy: getJsDocsIncludeDocsAliases(functionDeclaration),
 	};
 }
