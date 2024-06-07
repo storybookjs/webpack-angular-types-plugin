@@ -203,7 +203,7 @@ export function printType(
 	typeToPrint: Type,
 	expandType: boolean,
 	level: number,
-	mapping: GenericTypeMapping,
+	mapping: GenericTypeMapping = new WeakMap(),
 ): string {
 	const type = tryToReplaceTypeByGenericType(typeToPrint, mapping);
 	if (type.isUnionOrIntersection()) {
