@@ -124,16 +124,18 @@ export class WebpackAngularTypesPlugin {
 		interfaceInformation: InterfaceInformation,
 		module: Module,
 	): void {
-		const uniqueId = getGlobalUniqueId(module.identifier(), interfaceInformation.name);
-		const codeDocDependency = new CodeDocDependency(
-			interfaceInformation.name,
-			uniqueId,
-			getNonClassArgCodeBlock(
-				interfaceInformation.name,
-				interfaceInformation.entitiesByCategory,
-			),
-		);
-		module.addDependency(codeDocDependency);
+		for (const alias of interfaceInformation.aliases) {
+			const uniqueId = getGlobalUniqueId(module.identifier(), alias);
+			const codeDocDependency = new CodeDocDependency(
+				alias,
+				uniqueId,
+				getNonClassArgCodeBlock(
+					alias,
+					interfaceInformation.entitiesByCategory,
+				),
+			);
+			module.addDependency(codeDocDependency);
+		}
 	}
 
 	// noinspection JSMethodCanBeStatic

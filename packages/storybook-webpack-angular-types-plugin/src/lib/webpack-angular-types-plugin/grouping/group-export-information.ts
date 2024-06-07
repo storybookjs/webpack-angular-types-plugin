@@ -6,7 +6,7 @@ import {
 } from 'storybook-webpack-angular-types-plugin';
 
 /**
- * Functions and constants can be annotated with "@group-docs" to collect them into a
+ * Functions and constants can be annotated with "@include-docs" to collect them into a
  * single ArgsTable. Returns information grouped by the "groupBy" property.
  *
  * @param functionsInformation list of all functions

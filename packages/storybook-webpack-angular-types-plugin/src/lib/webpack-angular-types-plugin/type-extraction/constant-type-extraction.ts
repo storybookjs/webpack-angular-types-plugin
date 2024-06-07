@@ -1,7 +1,7 @@
 import { ConstantInformation } from 'storybook-webpack-angular-types-plugin';
 import { VariableStatement } from 'ts-morph';
 import { mapVariableDeclaration } from './declaration-mappers';
-import { getJsDocsGroupDocs, getVariableName } from './ast-utils';
+import { getJsDocsIncludeDocsAliases, getVariableName } from './ast-utils';
 
 export function generateConstantsTypeInformation(
 	variableStatements: VariableStatement[],
@@ -31,6 +31,6 @@ export function generateConstantTypeInformation(
 		name,
 		modulePath: filePath,
 		entity: mapVariableDeclaration(variableStatement),
-		groupBy: getJsDocsGroupDocs(variableStatement),
+		groupBy: getJsDocsIncludeDocsAliases(variableStatement),
 	};
 }

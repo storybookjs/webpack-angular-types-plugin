@@ -1,7 +1,7 @@
 import { EntitiesByCategory, Entity, InterfaceInformation } from '../../types';
 import { InterfaceDeclaration } from 'ts-morph';
 import { groupBy } from '../utils';
-import { collectBaseInterfaces } from './ast-utils';
+import { collectBaseInterfaces, getJsDocsIncludeDocsAliases } from './ast-utils';
 import { mapSignatureToEntity } from './signature-mappers';
 import { getterOrSetterInputExists, mergeEntities } from './utils';
 
@@ -73,8 +73,13 @@ export function generateInterfaceTypeInformation(
 	);
 	const mergedInterfaceEntities = mergeEntities(interfaceEntities);
 
+	const includeDocsAliases = getJsDocsIncludeDocsAliases(interfaceDeclaration);
+
+	const aliases = Array.from(new Set([name, ...includeDocsAliases]));
+
 	return {
 		name,
+		aliases,
 		modulePath: filePath,
 		entitiesByCategory: groupBy(
 			mergedInterfaceEntities,
