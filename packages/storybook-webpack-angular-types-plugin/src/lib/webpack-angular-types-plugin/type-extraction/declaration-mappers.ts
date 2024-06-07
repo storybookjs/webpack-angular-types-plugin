@@ -176,6 +176,8 @@ export function mapFunctionDeclaration(functionDeclaration: FunctionDeclaration)
 		description: getJsDocsDescription(functionDeclaration) || '',
 		jsDocParams: getJsDocsParams(functionDeclaration),
 		jsDocReturn: getJsDocsReturnDescription(functionDeclaration),
+		type: functionDeclaration.getName() +
+			printType(functionDeclaration.getType(), false, 0),
 		typeDetails: undefined,
 		required: false,
 	};
@@ -192,6 +194,7 @@ export function mapVariableDeclaration(variableStatement: VariableStatement): En
 		description: getJsDocsDescription(variableStatement) || '',
 		jsDocParams: getJsDocsParams(variableStatement),
 		jsDocReturn: getJsDocsReturnDescription(variableStatement),
+		type: printType(variableStatement.getType(), false, 0),
 		typeDetails: undefined,
 		required: false,
 	};
