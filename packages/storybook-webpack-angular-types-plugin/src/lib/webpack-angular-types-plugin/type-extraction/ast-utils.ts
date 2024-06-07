@@ -13,11 +13,8 @@ import {
 	VariableStatement,
 } from 'ts-morph';
 import { JsDocParam, DeclarationsByCategory } from '../../types';
-import {
-	EXCLUDE_DOCS_JS_DOCS_PARAM,
-	INCLUDE_DOCS_JS_DOCS_PARAM,
-	stripQuotes,
-} from '../utils';
+import { EXCLUDE_DOCS_JS_DOCS_PARAM, INCLUDE_DOCS_JS_DOCS_PARAM, stripQuotes } from '../utils';
+import { isInputSignal, isModelSignal } from './utils';
 
 /**
  * Collects all declarations by category from the given SourceFile that have an Angular decorator or are
@@ -270,8 +267,24 @@ export function getDefaultValue(
 	if (decl instanceof PropertyDeclaration) {
 		const initializer = decl.getInitializer();
 		const initializerType = initializer?.getType();
-		if (initializer && initializerType && isEvaluableType(initializerType)) {
-			return initializer.getText();
+		if (initializer && initializerType) {
+			if (isEvaluableType(initializerType)) {
+				return initializer.getText();
+			}
+
+			// If the property is a InputSignal or ModelSignal and the initializer is a CallExpression,
+			// we extract the initializer's first argument, e.g. "42" from "input.required(42, options)".
+			if (
+				Node.isCallExpression(initializer) &&
+				(isInputSignal(decl) || isModelSignal(decl))
+			) {
+				const args = initializer.getArguments();
+				if (args.length) {
+					if (isEvaluableType(args[0].getType())) {
+						return args[0].getText();
+					}
+				}
+			}
 		}
 	}
 	return undefined;

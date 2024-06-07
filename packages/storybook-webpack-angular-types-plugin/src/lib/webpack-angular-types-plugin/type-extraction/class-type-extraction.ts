@@ -8,7 +8,7 @@ import {
 } from '../../types';
 import { EXCLUDE_DOCS_JS_DOCS_PARAM, groupBy } from '../utils';
 import { collectBaseClasses, hasJsDocsTag } from './ast-utils';
-import { mapDeclarationToEntity } from './declaration-mappers';
+import { mapDeclarationToEntities } from './declaration-mappers';
 import { addGenericTypeMappings } from './type-details';
 import { BUILT_IN_ANGULAR_METHODS, getterOrSetterInputExists, mergeEntities } from './utils';
 
@@ -79,15 +79,17 @@ function getClassEntities(
 		if (propertiesToExclude?.test(declaration.getName())) {
 			continue;
 		}
-		const entity = mapDeclarationToEntity({ declaration, genericTypeMapping });
+		const declaredEntities = mapDeclarationToEntities({ declaration, genericTypeMapping });
 
-		// If there already is an input getter/setter declaration, do not overwrite
-		// the existing mapping
-		if (getterOrSetterInputExists(entities, entity.name)) {
-			continue;
+		for (const entity of declaredEntities) {
+			// If there already is an input getter/setter declaration, do not overwrite
+			// the existing mapping
+			if (getterOrSetterInputExists(entities, entity.name)) {
+				continue;
+			}
+
+			entities.set(entity.name, entity);
 		}
-
-		entities.set(entity.name, entity);
 	}
 
 	return entities;
