@@ -5,11 +5,14 @@ import {
 	AfterViewInit,
 	Component,
 	EventEmitter,
+	input,
+	output,
 	Input,
 	OnChanges,
 	OnDestroy,
 	OnInit,
 	Output,
+	model,
 } from '@angular/core';
 import { AbstractControl, ControlValueAccessor, ValidationErrors, Validator } from '@angular/forms';
 import { Observable } from 'rxjs';
@@ -139,7 +142,7 @@ export class ChildComponent
 	@Output('simpleOutputWithAlias') simpleOutputWithAlias = new EventEmitter<string>();
 
 	/**
-	 * This is an setter input with an alias and default override
+	 * This is a setter input with an alias and default override
 	 * @default false
 	 */
 	// eslint-disable-next-line @angular-eslint/no-input-rename
@@ -157,6 +160,85 @@ export class ChildComponent
 	@Input() readonlyArrayInput?: ReadonlyArray<string>;
 
 	@Input() testObjectTypeInput?: TestObjectType<string>;
+
+	/**
+	 * Simple input signal
+	 */
+	signalInput = input();
+
+	/**
+	 * Simple input signal of type `string`
+	 */
+	signalInputString = input<string>();
+
+	/**
+	 * Simple input signal of type `string` with default
+	 */
+	signalInputStringWithDefault = input<string>('empty');
+
+	/**
+	 * Input signal with object type
+	 */
+	signalInputObject = input<TestObjectType<string>>();
+
+	/**
+	 * Input signal with object type and default
+	 */
+	signalInputObjectWithDefault = input<TestObjectType<string>>({
+		x: 42,
+		y: 42,
+		z: '-42',
+		nestedObjectType: {
+			typeFromGrandparent: '42',
+		},
+	});
+
+	/**
+	 * Required input signal
+	 */
+	signalRequiredInput = input.required<boolean>();
+
+	/**
+	 * Signal output
+	 */
+	signalOutput = output<boolean>();
+
+	/**
+	 * Signal output
+	 */
+	signalOutputObject = output<TestObjectType<TestObjectType<number>>>();
+
+	/**
+	 * Simple model signal (input/output)
+	 */
+	signalModel = model();
+
+	/**
+	 * Simple model signal of type `string` (input/output)
+	 */
+	signalModelString = model<string>();
+
+	/**
+	 * Simple model signal of type `string` with default (input/output)
+	 */
+	signalModelStringWithDefault = model<string>('42');
+
+	/**
+	 * Model signal with object type (input/output)
+	 */
+	signalModelObject = model<TestObjectType<string>>();
+
+	/**
+	 * Model signal with object type and default (input/output)
+	 */
+	signalModelObjectWithDefault = model<TestObjectType<string>>({
+		x: 42,
+		y: 42,
+		z: '-42',
+		nestedObjectType: {
+			typeFromGrandparent: '42',
+		},
+	});
 
 	/**
 	 * This is some normal setter with a defaultValue override

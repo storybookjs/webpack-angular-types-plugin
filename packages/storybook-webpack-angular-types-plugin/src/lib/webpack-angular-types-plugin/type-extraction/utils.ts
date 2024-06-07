@@ -1,3 +1,4 @@
+import { MethodDeclaration, PropertyDeclaration, TypeFormatFlags } from 'ts-morph';
 import { Entity } from '../../types';
 
 export const BUILT_IN_ANGULAR_METHODS: { methodName: string; interfaceName: string }[] = [
@@ -47,4 +48,25 @@ export function mergeEntities(entities: Map<string, Entity>[]): Map<string, Enti
 		}
 	}
 	return result;
+}
+
+function isDeclarationOfType(declaration: PropertyDeclaration, typeName: string) {
+	const type = declaration.getType();
+	const symbol = declaration.getType().getSymbol();
+	if (symbol) {
+		return symbol.getName() === typeName;
+	}
+	return type.getText() === typeName;
+}
+
+export function isInputSignal(declaration: PropertyDeclaration): boolean {
+	return isDeclarationOfType(declaration, 'InputSignal');
+}
+
+export function isOutputEmitterRef(declaration: PropertyDeclaration): boolean {
+	return isDeclarationOfType(declaration, 'OutputEmitterRef');
+}
+
+export function isModelSignal(declaration: PropertyDeclaration) {
+	return isDeclarationOfType(declaration, 'ModelSignal');
 }
