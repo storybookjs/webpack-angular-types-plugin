@@ -26,7 +26,7 @@ import {
 } from './ast-utils';
 import { generateTypeDetailCollection } from './type-details';
 import { printType, stringifyTypeDetailCollection } from './type-printing';
-import { isInputSignal, isModelSignal, isOutputEmitterRef } from './utils';
+import { isInputSignal, isModelSignal, isOutputRef } from './utils';
 
 function getDeclarationKind(
 	declaration:
@@ -57,7 +57,7 @@ export function mapDeclarationToEntities(params: DeclarationToEntityMappingParam
 					kind: 'input',
 				},
 			];
-		} else if (isOutputEmitterRef(params.declaration)) {
+		} else if (isOutputRef(params.declaration)) {
 			return [
 				{
 					...propertyEntity,

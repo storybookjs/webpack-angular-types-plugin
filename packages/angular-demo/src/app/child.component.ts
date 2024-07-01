@@ -14,8 +14,9 @@ import {
 	Output,
 	model,
 } from '@angular/core';
+import { outputFromObservable } from '@angular/core/rxjs-interop';
 import { AbstractControl, ControlValueAccessor, ValidationErrors, Validator } from '@angular/forms';
-import { Observable } from 'rxjs';
+import { interval, map, Observable } from 'rxjs';
 import { ParentDirective } from './parent.directive';
 import { NestedInterface, TestInterface, TestObjectType, TestType } from './internal-types';
 
@@ -207,6 +208,13 @@ export class ChildComponent
 	 * Signal output
 	 */
 	signalOutputObject = output<TestObjectType<TestObjectType<number>>>();
+
+	private beep$ = interval(500).pipe(map(() => 'beep'));
+
+	/**
+	 * Output from Observable
+	 */
+	signalOutputFromObservable = outputFromObservable(this.beep$);
 
 	/**
 	 * Simple model signal (input/output)
