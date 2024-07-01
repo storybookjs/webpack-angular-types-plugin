@@ -63,8 +63,11 @@ export function isInputSignal(declaration: PropertyDeclaration): boolean {
 	return isDeclarationOfType(declaration, 'InputSignal');
 }
 
-export function isOutputEmitterRef(declaration: PropertyDeclaration): boolean {
-	return isDeclarationOfType(declaration, 'OutputEmitterRef');
+export function isOutputRef(declaration: PropertyDeclaration): boolean {
+	return (
+		isDeclarationOfType(declaration, 'OutputEmitterRef') ||
+		isDeclarationOfType(declaration, 'OutputRef')
+	);
 }
 
 export function isModelSignal(declaration: PropertyDeclaration) {
