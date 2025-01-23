@@ -6,6 +6,25 @@ import { ChildComponent } from '../child.component';
 
 # Component
 
+> **Note**: If you have a class that is extending another class and you want to exclude certain property using
+> the `@exclude-docs` annotation, you need to add the annotation to all overrides of the property.
+
+```typescript
+export class ChildComponent extends BaseComponent {
+	/**
+	 * @exclude-docs
+	 */
+	override doNotShowMe = 42;
+}
+
+export class BaseComponent {
+	/**
+	 * @exclude-docs
+	 */
+	doNotShowMe = 41;
+}
+```
+
 ## AppComponent
 
 <ArgTypes of={AppComponent} />
