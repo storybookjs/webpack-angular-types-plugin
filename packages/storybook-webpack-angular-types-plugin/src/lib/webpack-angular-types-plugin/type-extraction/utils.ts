@@ -1,4 +1,4 @@
-import { MethodDeclaration, PropertyDeclaration, TypeFormatFlags } from 'ts-morph';
+import { Node, PropertyDeclaration } from 'ts-morph';
 import { Entity } from '../../types';
 
 export const BUILT_IN_ANGULAR_METHODS: { methodName: string; interfaceName: string }[] = [
@@ -72,4 +72,25 @@ export function isOutputRef(declaration: PropertyDeclaration): boolean {
 
 export function isModelSignal(declaration: PropertyDeclaration) {
 	return isDeclarationOfType(declaration, 'ModelSignal');
+}
+
+export function isRequiredInputOrModelSignal(declaration: PropertyDeclaration): boolean {
+	const isInput = isInputSignal(declaration) || isModelSignal(declaration);
+	if (!isInput) {
+		return false;
+	}
+	const initializer = declaration.getInitializer();
+	if (!initializer || !Node.isCallExpression(initializer)) {
+		return false;
+	}
+
+	const expression = initializer.getExpression();
+	if (!Node.isPropertyAccessExpression(expression)) {
+		return false;
+	}
+
+	const name = expression.getName();
+	const expressionName = expression.getExpression().getText();
+
+	return name === 'required' && ['input', 'model'].includes(expressionName);
 }

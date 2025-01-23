@@ -119,7 +119,9 @@ export class ChildComponent
 	 * This is an input with an alias. The alias should be printed instead of the field name.
 	 */
 	// eslint-disable-next-line @angular-eslint/no-input-rename
-	@Input('childInputWithAlias') inputWithAlias?: string;
+	@Input('childInputWithAliasWorks') inputWithAlias?: string;
+
+	@Input({ alias: 'childInputWithDecoratorObjectAliasWorks' }) inputWithAliasObject?: string;
 
 	/**
 	 * This is an input with a default value override. The override should be
@@ -140,14 +142,14 @@ export class ChildComponent
 	 * This is an output with an alias.
 	 */
 	// eslint-disable-next-line
-	@Output('simpleOutputWithAlias') simpleOutputWithAlias = new EventEmitter<string>();
+	@Output('simpleOutputWithAliasWorks') simpleOutputWithAlias = new EventEmitter<string>();
 
 	/**
 	 * This is a setter input with an alias and default override
 	 * @default false
 	 */
 	// eslint-disable-next-line @angular-eslint/no-input-rename
-	@Input('setterInputWithAlias')
+	@Input('setterInputWithAliasWorks')
 	set setterInput(value: string[]) {}
 
 	get setterInput() {
@@ -199,6 +201,14 @@ export class ChildComponent
 	 */
 	signalRequiredInput = input.required<boolean>();
 
+	signalInputWithAlias = input<string>('test', {
+		alias: 'signalInputWithAliasWorks',
+	});
+
+	signalRequiredInputWithAlias = input.required<string>({
+		alias: 'signalRequiredInputWithAliasWorks',
+	});
+
 	/**
 	 * Signal output
 	 */
@@ -215,6 +225,14 @@ export class ChildComponent
 	 * Output from Observable
 	 */
 	signalOutputFromObservable = outputFromObservable(this.beep$);
+
+	signalOutputWithAlias = output<boolean>({
+		alias: 'signalOutputWithAliasWorks',
+	});
+
+	signalOutputFromObservableWithAlias = outputFromObservable(this.beep$, {
+		alias: 'signalOutputFromObservableWithAliasWorks',
+	});
 
 	/**
 	 * Simple model signal (input/output)
@@ -246,6 +264,14 @@ export class ChildComponent
 		nestedObjectType: {
 			typeFromGrandparent: '42',
 		},
+	});
+
+	modelInputWithAlias = model<string>('test', {
+		alias: 'modelInputWithAliasWorks',
+	});
+
+	modelRequiredInputWithAlias = model.required<string>({
+		alias: 'modelRequiredInputWithAliasWorks',
 	});
 
 	/**
