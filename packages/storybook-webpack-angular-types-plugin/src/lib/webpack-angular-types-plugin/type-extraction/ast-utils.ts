@@ -1,10 +1,11 @@
 import {
 	ClassDeclaration,
-	DecoratableNode,
 	FunctionDeclaration,
+	GetAccessorDeclaration,
 	InterfaceDeclaration,
 	JSDocableNode,
 	JSDocTag,
+	MethodDeclaration,
 	Node,
 	PropertyDeclaration,
 	SetAccessorDeclaration,
@@ -14,7 +15,7 @@ import {
 } from 'ts-morph';
 import { JsDocParam, DeclarationsByCategory } from '../../types';
 import { EXCLUDE_DOCS_JS_DOCS_PARAM, INCLUDE_DOCS_JS_DOCS_PARAM, stripQuotes } from '../utils';
-import { isInputSignal, isModelSignal } from './utils';
+import { isInputSignal, isModelSignal, isOutputRef, isRequiredInputOrModelSignal } from './utils';
 
 /**
  * Collects all declarations by category from the given SourceFile that have an Angular decorator or are
@@ -74,20 +75,102 @@ function getVariableStatements(sourceFile: SourceFile): VariableStatement[] {
 		);
 }
 
-/*
+/**
  * Returns the alias name from the @Input()/@Output() decorator of a node.
  * Returns undefined if no alias or decorator is available.
  */
-export function retrieveInputOutputDecoratorAlias(node: DecoratableNode): string | undefined {
+export function getAlias(
+	declaration:
+		| PropertyDeclaration
+		| GetAccessorDeclaration
+		| SetAccessorDeclaration
+		| MethodDeclaration,
+): string | undefined {
+	const aliasFromDecorator = getAliasFromDecorator(declaration);
+	if (aliasFromDecorator) {
+		return aliasFromDecorator;
+	}
+
+	if (!Node.isPropertyDeclaration(declaration)) {
+		return undefined;
+	}
+
+	return getAliasFromSignal(declaration);
+}
+
+function getAliasFromDecorator(
+	declaration:
+		| PropertyDeclaration
+		| GetAccessorDeclaration
+		| SetAccessorDeclaration
+		| MethodDeclaration,
+): string | undefined {
+	const decorators = declaration.getDecorators();
+
+	if (!decorators.length) {
+		return undefined;
+	}
+
 	for (const decoratorToCheck of ['Input', 'Output']) {
-		if (node.getDecorator(decoratorToCheck)) {
-			const decoratorArgs = node.getDecorator(decoratorToCheck)?.getArguments();
-			if (decoratorArgs && decoratorArgs.length === 1) {
-				return stripQuotes(decoratorArgs[0].getText());
-			}
+		const decorator = declaration.getDecorator(decoratorToCheck);
+		if (!decorator) {
+			continue;
 		}
+
+		const decoratorArgs = decorator.getArguments();
+		if (!decoratorArgs || decoratorArgs.length < 1) {
+			continue;
+		}
+		if (Node.isStringLiteral(decoratorArgs[0])) {
+			return stripQuotes(decoratorArgs[0].getText());
+		}
+		return extractPropertyFromArgument(decoratorArgs[0], 'alias');
 	}
 	return undefined;
+}
+
+function getAliasFromSignal(declaration: PropertyDeclaration): string | undefined {
+	const initializer = declaration.getInitializer();
+	const initializerType = initializer?.getType();
+
+	if (!initializer || !Node.isCallExpression(initializer) || !initializerType) {
+		return undefined;
+	}
+
+	const args = initializer.getArguments();
+
+	if (args.length === 1 && isRequiredInputOrModelSignal(declaration)) {
+		return extractPropertyFromArgument(args[0], 'alias');
+	}
+
+	if (args.length === 2 && (isInputSignal(declaration) || isModelSignal(declaration))) {
+		return extractPropertyFromArgument(args[1], 'alias');
+	}
+
+	if (isOutputRef(declaration)) {
+		// output can have either one (`output()`) or two arguments (`outputFromObservable()`)
+		const argument = args.length === 2 ? args[1] : args[0];
+		if (!argument) {
+			return undefined;
+		}
+		return extractPropertyFromArgument(argument, 'alias');
+	}
+	return undefined;
+}
+
+function extractPropertyFromArgument(argument: Node, name: string): string | undefined {
+	if (!Node.isObjectLiteralExpression(argument)) {
+		return undefined;
+	}
+	const aliasProperty = argument.getProperty(name);
+	if (!Node.isPropertyAssignment(aliasProperty)) {
+		return undefined;
+	}
+	const initializer = aliasProperty.getInitializer();
+	if (!Node.isStringLiteral(initializer)) {
+		return undefined;
+	}
+	return stripQuotes(initializer.getLiteralText());
 }
 
 /**

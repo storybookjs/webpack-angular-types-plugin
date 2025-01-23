@@ -22,7 +22,7 @@ import {
 	getVariableInitializerValue,
 	getVariableName,
 	isTypeRequired,
-	retrieveInputOutputDecoratorAlias,
+	getAlias,
 } from './ast-utils';
 import { generateTypeDetailCollection } from './type-details';
 import { printType, stringifyTypeDetailCollection } from './type-printing';
@@ -100,7 +100,7 @@ export function mapPropertyDeclaration({
 }: DeclarationToEntityMappingParams): Entity {
 	return {
 		kind: getDeclarationKind(declaration),
-		alias: retrieveInputOutputDecoratorAlias(declaration),
+		alias: getAlias(declaration),
 		name: declaration.getName(),
 		defaultValue: getDefaultValue(declaration as PropertyDeclaration),
 		description: getJsDocsDescription(declaration) || '',
@@ -132,7 +132,7 @@ export function mapSetAccessorDeclaration({
 	}
 	return {
 		kind: getDeclarationKind(setAccessorDeclaration),
-		alias: retrieveInputOutputDecoratorAlias(setAccessorDeclaration),
+		alias: getAlias(setAccessorDeclaration),
 		name: setAccessorDeclaration.getName(),
 		// accessors can not have a default value
 		defaultValue: getDefaultValue(setAccessorDeclaration),
@@ -161,7 +161,7 @@ export function mapGetAccessorDeclaration({
 	const getAccessorDeclaration = declaration as GetAccessorDeclaration;
 	return {
 		kind: getDeclarationKind(getAccessorDeclaration),
-		alias: retrieveInputOutputDecoratorAlias(getAccessorDeclaration),
+		alias: getAlias(getAccessorDeclaration),
 		name: getAccessorDeclaration.getName(),
 		// accessors can not have a default value
 		defaultValue: undefined,
