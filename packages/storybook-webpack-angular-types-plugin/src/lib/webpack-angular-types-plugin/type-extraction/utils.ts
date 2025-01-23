@@ -37,17 +37,38 @@ export function mergeEntities(entities: Map<string, Entity>[]): Map<string, Enti
 	}
 	const result = new Map<string, Entity>();
 
-	for (let i = entities.length - 1; i > -1; i--) {
-		const entitiesToMerge = entities[i];
+	// Merging maps of Entities from child class to base class. Entities from child class have higher priority.
+	for (const entitiesToMerge of entities) {
 		for (const entityToMerge of entitiesToMerge.values()) {
 			if (getterOrSetterInputExists(result, entityToMerge.name)) {
 				continue;
 			}
 
-			result.set(entityToMerge.name, entityToMerge);
+			const overridingEntity = result.get(entityToMerge.name);
+			if (!overridingEntity) {
+				result.set(entityToMerge.name, entityToMerge);
+			} else {
+				result.set(entityToMerge.name, mergeEntity(overridingEntity, entityToMerge));
+			}
 		}
 	}
 	return result;
+}
+
+function mergeEntity(overridingEntity: Entity, baseClassEntity: Entity): Entity {
+	return {
+		name: overridingEntity.name || baseClassEntity.name,
+		kind: overridingEntity.kind || baseClassEntity.kind,
+		alias: overridingEntity.alias || baseClassEntity.alias,
+		type: overridingEntity.type || baseClassEntity.type,
+		typeDetails: overridingEntity.typeDetails || baseClassEntity.typeDetails,
+		defaultValue: overridingEntity.defaultValue || baseClassEntity.defaultValue,
+		description: overridingEntity.description || baseClassEntity.description,
+		required: overridingEntity.required || baseClassEntity.required,
+		modifier: overridingEntity.modifier || baseClassEntity.modifier,
+		jsDocParams: overridingEntity.jsDocParams || baseClassEntity.jsDocParams,
+		jsDocReturn: overridingEntity.jsDocReturn || baseClassEntity.jsDocReturn,
+	};
 }
 
 function isDeclarationOfType(declaration: PropertyDeclaration, typeName: string) {
