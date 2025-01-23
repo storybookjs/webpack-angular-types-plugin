@@ -294,6 +294,23 @@ export class ChildComponent
 		return this._val;
 	}
 
+	/**
+	 * Should show the child class property info and not the base class info.
+	 */
+	override propertyWithChildClassOverride = 'This is the child class default';
+
+	/**
+	 * Should show this property in the docs even though it is excluded in the base class.
+	 */
+	override propertyExcludedInBaseClass = 'This is the child class default';
+
+	/**
+	 * Should not show this at all as it is also excluded in the base class.
+	 *
+	 * @exclude-docs
+	 */
+	override propertyExcludedInBaseAndChildClass = 'This is the child class default';
+
 	constructor() {
 		super();
 	}

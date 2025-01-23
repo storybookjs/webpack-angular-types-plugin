@@ -68,4 +68,28 @@ export abstract class ParentDirective<T> extends GrandParentDirective<T, TestInt
 	overloadedMethod(param: string, optionalParam?: string | null | undefined): string {
 		return String(param);
 	}
+
+	/**
+	 * Should not show this
+	 */
+	propertyWithChildClassOverride = 'This is the base class default';
+
+	/**
+	 * Should not show this
+	 *
+	 * @exclude-docs
+	 */
+	propertyExcludedInBaseClass = 'This is the base class default';
+
+	/**
+	 * This is a property that is excluded from the docs in the child class, but not in the base class.
+	 */
+	propertyExcludedInChildClass = 'This is the base class default';
+
+	/**
+	 * Should not show this at all
+	 *
+	 * @exclude-docs
+	 */
+	propertyExcludedInBaseAndChildClass = 'This is the base class default';
 }
