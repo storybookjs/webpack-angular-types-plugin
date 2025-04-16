@@ -222,9 +222,7 @@ export function mapMethodDeclaration({
 		description: getJsDocsDescription(methodDeclaration) || '',
 		jsDocParams: getJsDocsParams(methodDeclaration),
 		jsDocReturn: getJsDocsReturnDescription(methodDeclaration),
-		type:
-			methodDeclaration.getName() +
-			printType(methodDeclaration.getType(), false, 0, genericTypeMapping),
+		type: printType(methodDeclaration.getType(), false, 0, genericTypeMapping),
 		typeDetails: undefined,
 		required: false,
 	};
@@ -239,7 +237,7 @@ export function mapFunctionDeclaration(functionDeclaration: FunctionDeclaration)
 		description: getJsDocsDescription(functionDeclaration) || '',
 		jsDocParams: getJsDocsParams(functionDeclaration),
 		jsDocReturn: getJsDocsReturnDescription(functionDeclaration),
-		type: functionDeclaration.getName() + printType(functionDeclaration.getType(), false, 0),
+		type: printType(functionDeclaration.getType(), false, 0),
 		typeDetails: undefined,
 		required: false,
 	};

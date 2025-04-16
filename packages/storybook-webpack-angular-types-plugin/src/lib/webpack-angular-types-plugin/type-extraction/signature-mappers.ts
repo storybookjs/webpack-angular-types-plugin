@@ -60,9 +60,7 @@ export function mapMethodSignature({ signature }: SignatureToEntityMappingParams
 		description: getJsDocsDescription(methodSignature) || '',
 		jsDocParams: getJsDocsParams(methodSignature),
 		jsDocReturn: getJsDocsReturnDescription(methodSignature),
-		type:
-			methodSignature.getName() +
-			printType(methodSignature.getType(), false, 0, new WeakMap()),
+		type: printType(methodSignature.getType(), false, 0, new WeakMap()),
 		typeDetails: undefined,
 		required: false,
 	};
