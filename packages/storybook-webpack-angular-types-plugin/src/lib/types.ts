@@ -111,12 +111,14 @@ export type TsMorphSymbol = TsSymbol;
 
 export type GenericTypeMapping = WeakMap<TsMorphSymbol, Type>;
 
-export interface DeclarationToEntityMappingParams {
-	declaration:
-		| PropertyDeclaration
-		| SetAccessorDeclaration
-		| GetAccessorDeclaration
-		| MethodDeclaration;
+type Declaration =
+	| PropertyDeclaration
+	| SetAccessorDeclaration
+	| GetAccessorDeclaration
+	| MethodDeclaration;
+
+export interface DeclarationToEntityMappingParams<T extends Declaration = Declaration> {
+	declaration: T;
 	genericTypeMapping: GenericTypeMapping;
 }
 

@@ -15,7 +15,12 @@ import {
 } from 'ts-morph';
 import { JsDocParam, DeclarationsByCategory } from '../../types';
 import { EXCLUDE_DOCS_JS_DOCS_PARAM, INCLUDE_DOCS_JS_DOCS_PARAM, stripQuotes } from '../utils';
-import { isInputSignal, isModelSignal, isOutputRef, isRequiredInputOrModelSignal } from './utils';
+import {
+	isInputSignal,
+	isModelSignal,
+	isOutputRef,
+	isRequiredInputOrModelSignal,
+} from './angular-utils';
 
 /**
  * Collects all declarations by category from the given SourceFile that have an Angular decorator or are

@@ -242,3 +242,36 @@ export function stringifyTypeDetailCollection(
 	}
 	return result;
 }
+
+export function printInputType(rawType: string): string {
+	const INPUT_TYPES = ['InputSignal', 'ModelSignal'];
+
+	for (const INPUT_TYPE of INPUT_TYPES) {
+		if (rawType.startsWith(INPUT_TYPE + '<') && rawType.endsWith('>')) {
+			return rawType.slice(INPUT_TYPE.length + 1, -1);
+		}
+	}
+
+	return rawType;
+}
+
+export function printOutputType(rawType: string): string {
+	const OUTPUT_TYPES = [
+		'OutputRef',
+		'OutputEmitterRef',
+		'ModelSignal',
+		'EventEmitter',
+		'Subject',
+		'BehaviorSubject',
+		'ReplaySubject',
+		'AsyncSubject',
+	];
+
+	for (const OUTPUT_TYPE of OUTPUT_TYPES) {
+		if (rawType.startsWith(OUTPUT_TYPE + '<') && rawType.endsWith('>')) {
+			return rawType.slice(OUTPUT_TYPE.length + 1, -1);
+		}
+	}
+
+	return rawType;
+}
