@@ -1,22 +1,5 @@
-import { Node, PropertyDeclaration } from 'ts-morph';
+import { PropertyDeclaration } from 'ts-morph';
 import { Entity } from '../../types';
-
-export const BUILT_IN_ANGULAR_METHODS: { methodName: string; interfaceName: string }[] = [
-	{ methodName: 'ngOnInit', interfaceName: 'OnInit' },
-	{ methodName: 'ngOnChanges', interfaceName: 'OnChanges' },
-	{ methodName: 'ngAfterContentInit', interfaceName: 'AfterContentInit' },
-	{ methodName: 'ngAfterViewInit', interfaceName: 'AfterViewInit' },
-	{ methodName: 'ngOnDestroy', interfaceName: 'OnDestroy' },
-	{ methodName: 'ngDoCheck', interfaceName: 'DoCheck' },
-	{ methodName: 'ngAfterContentChecked', interfaceName: 'AfterContentChecked' },
-	{ methodName: 'ngAfterViewChecked', interfaceName: 'AfterViewChecked' },
-	{ methodName: 'writeValue', interfaceName: 'ControlValueAccessor' },
-	{ methodName: 'registerOnChange', interfaceName: 'ControlValueAccessor' },
-	{ methodName: 'registerOnTouched', interfaceName: 'ControlValueAccessor' },
-	{ methodName: 'setDisabledState', interfaceName: 'ControlValueAccessor' },
-	{ methodName: 'validate', interfaceName: 'Validator' },
-	{ methodName: 'registerOnValidatorChange', interfaceName: 'Validator' },
-];
 
 /**
  * Checks whether a getter/setter input is already present in the given map
@@ -71,47 +54,11 @@ function mergeEntity(overridingEntity: Entity, baseClassEntity: Entity): Entity 
 	};
 }
 
-function isDeclarationOfType(declaration: PropertyDeclaration, typeName: string) {
+export function isDeclarationOfType(declaration: PropertyDeclaration, typeName: string) {
 	const type = declaration.getType();
 	const symbol = declaration.getType().getSymbol();
 	if (symbol) {
 		return symbol.getName() === typeName;
 	}
 	return type.getText() === typeName;
-}
-
-export function isInputSignal(declaration: PropertyDeclaration): boolean {
-	return isDeclarationOfType(declaration, 'InputSignal');
-}
-
-export function isOutputRef(declaration: PropertyDeclaration): boolean {
-	return (
-		isDeclarationOfType(declaration, 'OutputEmitterRef') ||
-		isDeclarationOfType(declaration, 'OutputRef')
-	);
-}
-
-export function isModelSignal(declaration: PropertyDeclaration) {
-	return isDeclarationOfType(declaration, 'ModelSignal');
-}
-
-export function isRequiredInputOrModelSignal(declaration: PropertyDeclaration): boolean {
-	const isInput = isInputSignal(declaration) || isModelSignal(declaration);
-	if (!isInput) {
-		return false;
-	}
-	const initializer = declaration.getInitializer();
-	if (!initializer || !Node.isCallExpression(initializer)) {
-		return false;
-	}
-
-	const expression = initializer.getExpression();
-	if (!Node.isPropertyAccessExpression(expression)) {
-		return false;
-	}
-
-	const name = expression.getName();
-	const expressionName = expression.getExpression().getText();
-
-	return name === 'required' && ['input', 'model'].includes(expressionName);
 }

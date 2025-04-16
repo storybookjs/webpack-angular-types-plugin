@@ -7,10 +7,11 @@ import {
 	ClassInformation,
 } from '../../types';
 import { EXCLUDE_DOCS_JS_DOCS_PARAM, groupBy } from '../utils';
+import { isBuiltinAngularMethod } from './angular-utils';
 import { collectBaseClasses, hasJsDocsTag } from './ast-utils';
 import { mapDeclarationToEntities } from './declaration-mappers';
 import { addGenericTypeMappings } from './type-details';
-import { BUILT_IN_ANGULAR_METHODS, getterOrSetterInputExists, mergeEntities } from './utils';
+import { getterOrSetterInputExists, mergeEntities } from './utils';
 
 /**
  * Creates mappings from generic class arguments of a subClass to the generic
@@ -138,17 +139,4 @@ export function generateClassTypeInformation(
 			(entity) => entity.kind,
 		) as EntitiesByCategory,
 	};
-}
-
-function isBuiltinAngularMethod(declaration: ClassDeclaration, methodName: string): boolean {
-	const candidate = BUILT_IN_ANGULAR_METHODS.find(
-		(builtInMethod) => builtInMethod.methodName === methodName,
-	);
-	if (!candidate) {
-		return false;
-	}
-	const isImplemented = declaration
-		.getImplements()
-		.find((implement) => implement.getText() === candidate.interfaceName);
-	return !!isImplemented;
 }

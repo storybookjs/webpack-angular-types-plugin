@@ -5,6 +5,7 @@ import {
 	PropertyDeclaration,
 	SetAccessorDeclaration,
 	VariableStatement,
+	Node,
 } from 'ts-morph';
 import {
 	Entity,
@@ -25,16 +26,34 @@ import {
 	getAlias,
 } from './ast-utils';
 import { generateTypeDetailCollection } from './type-details';
-import { printType, stringifyTypeDetailCollection } from './type-printing';
-import { isInputSignal, isModelSignal, isOutputRef } from './utils';
+import {
+	printInputType,
+	printOutputType,
+	printType,
+	stringifyTypeDetailCollection,
+} from './type-printing';
+import { isInputSignal, isModelSignal, isOutputRef } from './angular-utils';
 
+function getDeclarationKind(declaration: PropertyDeclaration): EntityKind | 'model';
+function getDeclarationKind(
+	declaration: SetAccessorDeclaration | GetAccessorDeclaration | MethodDeclaration,
+): EntityKind;
 function getDeclarationKind(
 	declaration:
 		| PropertyDeclaration
 		| SetAccessorDeclaration
 		| GetAccessorDeclaration
 		| MethodDeclaration,
-): EntityKind {
+): EntityKind | 'model' {
+	if (Node.isPropertyDeclaration(declaration)) {
+		if (isInputSignal(declaration)) {
+			return 'input';
+		} else if (isModelSignal(declaration)) {
+			return 'model';
+		} else if (isOutputRef(declaration)) {
+			return 'output';
+		}
+	}
 	if (declaration.getDecorator('Input')) {
 		return 'input';
 	} else if (declaration.getDecorator('Output')) {
@@ -48,40 +67,9 @@ function getDeclarationKind(
 
 export function mapDeclarationToEntities(params: DeclarationToEntityMappingParams): Entity[] {
 	if (params.declaration instanceof PropertyDeclaration) {
-		const propertyEntity = mapPropertyDeclaration(params);
-
-		if (isInputSignal(params.declaration)) {
-			return [
-				{
-					...propertyEntity,
-					kind: 'input',
-				},
-			];
-		} else if (isOutputRef(params.declaration)) {
-			return [
-				{
-					...propertyEntity,
-					kind: 'output',
-				},
-			];
-		} else if (isModelSignal(params.declaration)) {
-			// A model() signal is equivalent to an input and output signal. That's why we create
-			// two entities from that to list it under both "inputs" and "outputs" section in the ArgsTable.
-			return [
-				{
-					...propertyEntity,
-					kind: 'input',
-				},
-				{
-					...propertyEntity,
-					name: propertyEntity.name + 'Change',
-					kind: 'output',
-					defaultValue: undefined,
-				},
-			];
-		} else {
-			return [propertyEntity];
-		}
+		return mapPropertyDeclaration(
+			params as DeclarationToEntityMappingParams<PropertyDeclaration>,
+		);
 	} else if (params.declaration instanceof SetAccessorDeclaration) {
 		return [mapSetAccessorDeclaration(params)];
 	} else if (params.declaration instanceof GetAccessorDeclaration) {
@@ -97,14 +85,15 @@ export function mapDeclarationToEntities(params: DeclarationToEntityMappingParam
 export function mapPropertyDeclaration({
 	declaration,
 	genericTypeMapping,
-}: DeclarationToEntityMappingParams): Entity {
-	return {
-		kind: getDeclarationKind(declaration),
+}: DeclarationToEntityMappingParams<PropertyDeclaration>): Entity[] {
+	const kind = getDeclarationKind(declaration);
+	const type = printType(declaration.getType(), false, 0, genericTypeMapping);
+
+	const baseEntity: Omit<Entity, 'kind' | 'type'> = {
 		alias: getAlias(declaration),
 		name: declaration.getName(),
 		defaultValue: getDefaultValue(declaration as PropertyDeclaration),
 		description: getJsDocsDescription(declaration) || '',
-		type: printType(declaration.getType(), false, 0, genericTypeMapping),
 		typeDetails: stringifyTypeDetailCollection(
 			generateTypeDetailCollection(
 				declaration.getType(),
@@ -115,6 +104,46 @@ export function mapPropertyDeclaration({
 		),
 		required: isTypeRequired(declaration.getType()),
 	};
+
+	if (kind === 'input') {
+		return [
+			{
+				...baseEntity,
+				kind: 'input',
+				type: printInputType(type),
+			},
+		];
+	} else if (kind === 'output') {
+		return [
+			{
+				...baseEntity,
+				kind: 'output',
+				type: printOutputType(type),
+			},
+		];
+	} else if (kind === 'model') {
+		return [
+			{
+				...baseEntity,
+				kind: 'input',
+				type: printInputType(type),
+			},
+			{
+				...baseEntity,
+				name: baseEntity.name + 'Change',
+				kind: 'output',
+				type: printOutputType(type),
+				defaultValue: undefined,
+			},
+		];
+	}
+	return [
+		{
+			...baseEntity,
+			kind,
+			type,
+		},
+	];
 }
 
 /*
