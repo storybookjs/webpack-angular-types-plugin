@@ -7,7 +7,7 @@ import {
 	ClassInformation,
 } from '../../types';
 import { EXCLUDE_DOCS_JS_DOCS_PARAM, groupBy } from '../utils';
-import { isBuiltinAngularMethod } from './angular-utils';
+import { isNativeAngularMethod } from './angular-utils';
 import { collectBaseClasses, hasJsDocsTag } from './ast-utils';
 import { mapDeclarationToEntities } from './declaration-mappers';
 import { addGenericTypeMappings } from './type-details';
@@ -70,7 +70,7 @@ function getClassEntities(
 			declaration.hasModifier(SyntaxKind.PrivateKeyword) ||
 			declaration.hasModifier(SyntaxKind.ProtectedKeyword) ||
 			(Node.isMethodDeclaration(declaration) &&
-				isBuiltinAngularMethod(classDeclaration, declaration.getName())) ||
+				isNativeAngularMethod(classDeclaration, declaration.getName())) ||
 			hasJsDocsTag(declaration, EXCLUDE_DOCS_JS_DOCS_PARAM)
 		) {
 			continue;

@@ -1,7 +1,7 @@
 import { ClassDeclaration, Node, PropertyDeclaration } from 'ts-morph';
 import { isDeclarationOfType } from './utils';
 
-const BUILT_IN_ANGULAR_METHODS: { methodName: string; interfaceName: string }[] = [
+const NATIVE_ANGULAR_METHODS: { methodName: string; interfaceName: string }[] = [
 	{ methodName: 'ngOnInit', interfaceName: 'OnInit' },
 	{ methodName: 'ngOnChanges', interfaceName: 'OnChanges' },
 	{ methodName: 'ngAfterContentInit', interfaceName: 'AfterContentInit' },
@@ -18,10 +18,8 @@ const BUILT_IN_ANGULAR_METHODS: { methodName: string; interfaceName: string }[] 
 	{ methodName: 'registerOnValidatorChange', interfaceName: 'Validator' },
 ];
 
-export function isBuiltinAngularMethod(declaration: ClassDeclaration, methodName: string): boolean {
-	const candidate = BUILT_IN_ANGULAR_METHODS.find(
-		(builtInMethod) => builtInMethod.methodName === methodName,
-	);
+export function isNativeAngularMethod(declaration: ClassDeclaration, methodName: string): boolean {
+	const candidate = NATIVE_ANGULAR_METHODS.find((method) => method.methodName === methodName);
 	if (!candidate) {
 		return false;
 	}
