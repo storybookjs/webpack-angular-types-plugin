@@ -26,12 +26,7 @@ import {
 	getAlias,
 } from './ast-utils';
 import { generateTypeDetailCollection } from './type-details';
-import {
-	printInputType,
-	printOutputType,
-	printType,
-	stringifyTypeDetailCollection,
-} from './type-printing';
+import { printType, stringifyTypeDetailCollection } from './type-printing';
 import { isInputSignal, isModelSignal, isOutputRef } from './angular-utils';
 
 function getDeclarationKind(declaration: PropertyDeclaration): EntityKind | 'model';
@@ -87,11 +82,11 @@ export function mapPropertyDeclaration({
 	genericTypeMapping,
 }: DeclarationToEntityMappingParams<PropertyDeclaration>): Entity[] {
 	const kind = getDeclarationKind(declaration);
-	const type = printType(declaration.getType(), false, 0, genericTypeMapping);
 
-	const baseEntity: Omit<Entity, 'kind' | 'type'> = {
+	const baseEntity: Omit<Entity, 'kind'> = {
 		alias: getAlias(declaration),
 		name: declaration.getName(),
+		type: printType(declaration.getType(), false, 0, genericTypeMapping),
 		defaultValue: getDefaultValue(declaration as PropertyDeclaration),
 		description: getJsDocsDescription(declaration) || '',
 		typeDetails: stringifyTypeDetailCollection(
@@ -110,7 +105,6 @@ export function mapPropertyDeclaration({
 			{
 				...baseEntity,
 				kind: 'input',
-				type: printInputType(type),
 			},
 		];
 	} else if (kind === 'output') {
@@ -118,7 +112,6 @@ export function mapPropertyDeclaration({
 			{
 				...baseEntity,
 				kind: 'output',
-				type: printOutputType(type),
 			},
 		];
 	} else if (kind === 'model') {
@@ -126,13 +119,11 @@ export function mapPropertyDeclaration({
 			{
 				...baseEntity,
 				kind: 'input',
-				type: printInputType(type),
 			},
 			{
 				...baseEntity,
 				name: baseEntity.name + 'Change',
 				kind: 'output',
-				type: printOutputType(type),
 				defaultValue: undefined,
 			},
 		];
@@ -141,7 +132,6 @@ export function mapPropertyDeclaration({
 		{
 			...baseEntity,
 			kind,
-			type,
 		},
 	];
 }

@@ -9,6 +9,7 @@ import {
 	isObjectType,
 	isReadonlyArray,
 } from './type-details';
+import { getTypeArgument, isType } from './utils';
 
 /*
  * Given an array of type strings, it is searched if both the "true" and "false"
@@ -200,24 +201,55 @@ function printAliasOrReference(
  * Gets a printable string from a type.
  */
 export function printType(
-	typeToPrint: Type,
+	type: Type,
 	expandType: boolean,
 	level: number,
 	mapping: GenericTypeMapping = new WeakMap(),
 ): string {
-	const type = tryToReplaceTypeByGenericType(typeToPrint, mapping);
-	if (type.isUnionOrIntersection()) {
-		return printUnionOrIntersection(type, expandType, level, mapping);
-	} else if (type.isTuple()) {
-		return printTuple(type, expandType, level, mapping);
-	} else if (isInterface(type)) {
-		return printInterface(type, expandType, level, mapping);
-	} else if (isObjectType(type)) {
-		return printObject(type, expandType, level, mapping);
-	} else if (isFunctionType(type)) {
-		return printFunction(type, expandType, level, mapping);
+	let typeToPrint: Type;
+
+	if (
+		[
+			'InputSignal',
+			'ModelSignal',
+			'OutputRef',
+			'OutputEmitterRef',
+			'ModelSignal',
+			'EventEmitter',
+			'Subject',
+			'BehaviorSubject',
+			'ReplaySubject',
+			'AsyncSubject',
+		].some((typeName) => isType(type, typeName))
+	) {
+		const typeArgument = getTypeArgument(type, 0);
+		if (!typeArgument) {
+			return 'unknown';
+		}
+		typeToPrint = typeArgument;
+	} else if (isType(type, 'InputSignalWithTransform')) {
+		const typeArgument = getTypeArgument(type, 1);
+		if (!typeArgument) {
+			return 'unknown';
+		}
+		typeToPrint = typeArgument;
 	} else {
-		return printAliasOrReference(type, expandType, level, mapping);
+		typeToPrint = type;
+	}
+
+	const genericType = tryToReplaceTypeByGenericType(typeToPrint, mapping);
+	if (genericType.isUnionOrIntersection()) {
+		return printUnionOrIntersection(genericType, expandType, level, mapping);
+	} else if (genericType.isTuple()) {
+		return printTuple(genericType, expandType, level, mapping);
+	} else if (isInterface(genericType)) {
+		return printInterface(genericType, expandType, level, mapping);
+	} else if (isObjectType(genericType)) {
+		return printObject(genericType, expandType, level, mapping);
+	} else if (isFunctionType(genericType)) {
+		return printFunction(genericType, expandType, level, mapping);
+	} else {
+		return printAliasOrReference(genericType, expandType, level, mapping);
 	}
 }
 
@@ -241,37 +273,4 @@ export function stringifyTypeDetailCollection(
 		}
 	}
 	return result;
-}
-
-export function printInputType(rawType: string): string {
-	const INPUT_TYPES = ['InputSignal', 'ModelSignal'];
-
-	for (const INPUT_TYPE of INPUT_TYPES) {
-		if (rawType.startsWith(INPUT_TYPE + '<') && rawType.endsWith('>')) {
-			return rawType.slice(INPUT_TYPE.length + 1, -1);
-		}
-	}
-
-	return rawType;
-}
-
-export function printOutputType(rawType: string): string {
-	const OUTPUT_TYPES = [
-		'OutputRef',
-		'OutputEmitterRef',
-		'ModelSignal',
-		'EventEmitter',
-		'Subject',
-		'BehaviorSubject',
-		'ReplaySubject',
-		'AsyncSubject',
-	];
-
-	for (const OUTPUT_TYPE of OUTPUT_TYPES) {
-		if (rawType.startsWith(OUTPUT_TYPE + '<') && rawType.endsWith('>')) {
-			return rawType.slice(OUTPUT_TYPE.length + 1, -1);
-		}
-	}
-
-	return rawType;
 }

@@ -30,7 +30,10 @@ export function isNativeAngularMethod(declaration: ClassDeclaration, methodName:
 }
 
 export function isInputSignal(declaration: PropertyDeclaration): boolean {
-	return isDeclarationOfType(declaration, 'InputSignal');
+	return (
+		isDeclarationOfType(declaration, 'InputSignal') ||
+		isDeclarationOfType(declaration, 'InputSignalWithTransform')
+	);
 }
 
 export function isOutputRef(declaration: PropertyDeclaration): boolean {
