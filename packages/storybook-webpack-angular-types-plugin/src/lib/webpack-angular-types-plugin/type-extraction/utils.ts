@@ -1,4 +1,4 @@
-import { PropertyDeclaration } from 'ts-morph';
+import { PropertyDeclaration, Type } from 'ts-morph';
 import { Entity } from '../../types';
 
 /**
@@ -56,9 +56,28 @@ function mergeEntity(overridingEntity: Entity, baseClassEntity: Entity): Entity 
 
 export function isDeclarationOfType(declaration: PropertyDeclaration, typeName: string) {
 	const type = declaration.getType();
-	const symbol = declaration.getType().getSymbol();
+	return isType(type, typeName);
+}
+
+export function isType(type: Type, typeName: string) {
+	const symbol = type.getSymbol();
 	if (symbol) {
 		return symbol.getName() === typeName;
 	}
 	return type.getText() === typeName;
+}
+
+export function getTypeArgument(type: Type, index: number) {
+	const symbol = type.getSymbol();
+	if (!symbol) {
+		return undefined;
+	}
+
+	const typeArguments = type.getTypeArguments();
+
+	if (typeArguments.length <= index) {
+		return undefined;
+	}
+
+	return typeArguments[index];
 }

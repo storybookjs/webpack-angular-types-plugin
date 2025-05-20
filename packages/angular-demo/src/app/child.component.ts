@@ -13,6 +13,8 @@ import {
 	OnInit,
 	Output,
 	model,
+	booleanAttribute,
+	numberAttribute,
 } from '@angular/core';
 import { outputFromObservable } from '@angular/core/rxjs-interop';
 import { AbstractControl, ControlValueAccessor, ValidationErrors, Validator } from '@angular/forms';
@@ -207,6 +209,28 @@ export class ChildComponent
 
 	signalRequiredInputWithAlias = input.required<string>({
 		alias: 'signalRequiredInputWithAliasWorks',
+	});
+
+	signalInputWithTransform = input(42, {
+		transform: numberAttribute,
+	});
+
+	signalRequiredInputWithTransform = input.required({
+		transform: numberAttribute,
+	});
+
+	signalInputWithTransformAndExplicitTyping = input<boolean, boolean | string | null | undefined>(
+		false,
+		{
+			transform: booleanAttribute,
+		},
+	);
+
+	signalRequiredInputWithTransformAndExplicitTyping = input.required<
+		number,
+		string | number | boolean | null | undefined
+	>({
+		transform: numberAttribute,
 	});
 
 	/**
