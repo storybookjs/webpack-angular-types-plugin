@@ -1,14 +1,18 @@
-const rootMain = require('../../../.storybook/main');
+import { StorybookConfig } from '@storybook/angular';
+
 const WebpackAngularTypesPlugin =
 	require('../../../dist/packages/storybook-webpack-angular-types-plugin/index').WebpackAngularTypesPlugin;
 
-module.exports = {
-	...rootMain,
-
-	core: { builder: 'webpack5' },
-
+const config: StorybookConfig = {
+	framework: {
+		name: '@storybook/angular',
+		options: {},
+	},
+	core: {
+		builder: '@storybook/builder-webpack5',
+	},
 	stories: ['../src/app/**/*.mdx', '../src/app/**/*.stories.@(js|jsx|ts|tsx)'],
-	addons: ['@storybook/addon-essentials'],
+	addons: ['@storybook/addon-docs'],
 	webpackFinal: async (config, { configType }) => {
 		// add your own webpack tweaks if needed
 		config.plugins.push(
@@ -20,3 +24,5 @@ module.exports = {
 		return config;
 	},
 };
+
+export default config;
