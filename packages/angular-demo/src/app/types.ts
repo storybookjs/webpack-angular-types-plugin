@@ -7,6 +7,11 @@ export interface UndocumentedSecret {
  */
 export interface Product extends Item {
 	price: Price;
+
+	/**
+	 * @exclude-docs
+	 */
+	hiddenProperty?: unknown;
 }
 
 export interface Item {
