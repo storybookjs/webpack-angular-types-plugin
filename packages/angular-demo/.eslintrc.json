@@ -24,7 +24,8 @@
 						"prefix": "storybook-webpack-angular-types-plugin",
 						"style": "kebab-case"
 					}
-				]
+				],
+				"@angular-eslint/prefer-standalone": "off"
 			}
 		},
 		{

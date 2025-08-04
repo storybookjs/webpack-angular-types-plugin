@@ -2,3 +2,4 @@ dist
 .angular/cache
 
 /.nx/cache
+/.nx/workspace-data
