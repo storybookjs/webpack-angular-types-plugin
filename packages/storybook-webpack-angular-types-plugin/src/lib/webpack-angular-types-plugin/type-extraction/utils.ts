@@ -67,7 +67,7 @@ export function isType(type: Type, typeName: string) {
 	return type.getText() === typeName;
 }
 
-export function getTypeArgument(type: Type, index: number) {
+export function getTypeArgument(type: Type, index: number): Type | undefined {
 	const symbol = type.getSymbol();
 	if (!symbol) {
 		return undefined;

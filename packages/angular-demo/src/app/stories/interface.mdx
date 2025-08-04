@@ -1,7 +1,9 @@
-import { ArgTypes, Meta } from '@storybook/addon-docs';
+import { ArgTypes, Meta } from '@storybook/addon-docs/blocks';
 
 <Meta title="TypeScript/Interfaces" />
+
 # Interface
+
 ## Product
 
 Interfaces need to be annotated with `@include-docs` for the type information to be generated.
@@ -13,6 +15,20 @@ Interfaces need to be annotated with `@include-docs` for the type information to
 >
 > Add at least one **used** constant or function declaration to the file containing the interface.
 
+To exclude certain properties, annotate them with the `@exclude-docs` annotation:
+
+```typescript
+/**
+ * @include-docs Product
+ */
+export interface Product {
+	/**
+	 * @exclude-docs
+	 */
+	hiddenProperty: unknown;
+}
+```
+
 <ArgTypes of="Product" />
 
 ## Aliases
@@ -23,7 +39,9 @@ Use `@include-docs` to specify aliases for the interface as identifiers.
 /**
  * @include-docs Cost,Charge
  */
-export interface Price { /* ... */ }
+export interface Price {
+	/* ... */
+}
 ```
 
 ### Price
