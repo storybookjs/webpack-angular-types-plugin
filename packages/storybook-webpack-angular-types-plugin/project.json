@@ -3,6 +3,7 @@
 	"$schema": "../../node_modules/nx/schemas/project-schema.json",
 	"sourceRoot": "packages/storybook-webpack-angular-types-plugin/src",
 	"projectType": "library",
+	"tags": [],
 	"targets": {
 		"build": {
 			"executor": "@nx/js:tsc",
@@ -36,6 +37,5 @@
 				"jestConfig": "packages/storybook-webpack-angular-types-plugin/jest.config.ts"
 			}
 		}
-	},
-	"tags": []
+	}
 }

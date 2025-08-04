@@ -6,7 +6,7 @@
 		"ts-morph": "^21.0.1",
 		"get-tsconfig": "^4.3.0",
 		"micromatch": "^4.0.5",
-		"@storybook/blocks": "^8.0.0"
+		"@storybook/addon-docs": "9.1.1"
 	},
 	"peerDependencies": {
 		"webpack": "^5.74.0"
