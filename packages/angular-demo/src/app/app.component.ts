@@ -23,6 +23,7 @@ export class AppComponent {
 			amount: 5.99,
 			unit: '€',
 		},
+		hiddenProperty: '',
 	};
 
 	/**

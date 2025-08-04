@@ -1,7 +1,7 @@
 import { EntitiesByCategory, Entity, InterfaceInformation } from '../../types';
 import { InterfaceDeclaration } from 'ts-morph';
-import { groupBy } from '../utils';
-import { collectBaseInterfaces, getJsDocsIncludeDocsAliases } from './ast-utils';
+import { EXCLUDE_DOCS_JS_DOCS_PARAM, groupBy } from '../utils';
+import { collectBaseInterfaces, getJsDocsIncludeDocsAliases, hasJsDocsTag } from './ast-utils';
 import { mapSignatureToEntity } from './signature-mappers';
 import { getterOrSetterInputExists, mergeEntities } from './utils';
 
@@ -17,6 +17,10 @@ function getInterfaceEntities(
 	const entities = new Map<string, Entity>();
 
 	for (const signature of [...properties, ...methods]) {
+		if (hasJsDocsTag(signature, EXCLUDE_DOCS_JS_DOCS_PARAM)) {
+			continue;
+		}
+
 		// do not include the property if it passes the exclusion test
 		if (propertiesToExclude?.test(signature.getName())) {
 			continue;
