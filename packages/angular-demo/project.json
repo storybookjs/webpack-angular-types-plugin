@@ -4,6 +4,7 @@
 	"projectType": "application",
 	"sourceRoot": "packages/angular-demo/src",
 	"prefix": "storybook-webpack-angular-types-plugin",
+	"tags": [],
 	"targets": {
 		"build": {
 			"executor": "@angular-devkit/build-angular:browser",
@@ -65,7 +66,8 @@
 					"buildTarget": "angular-demo:build:development"
 				}
 			},
-			"defaultConfiguration": "development"
+			"defaultConfiguration": "development",
+			"continuous": true
 		},
 		"extract-i18n": {
 			"executor": "@angular-devkit/build-angular:extract-i18n",
@@ -112,6 +114,5 @@
 				}
 			}
 		}
-	},
-	"tags": []
+	}
 }

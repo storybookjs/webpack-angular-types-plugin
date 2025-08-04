@@ -1,6 +1,6 @@
 import { STORYBOOK_ANGULAR_ARG_TYPES, STORYBOOK_COMPONENT_ID } from '../constants';
 import { EntitiesByCategory, Entity, JsDocParam } from '../types';
-import { Conditional } from '@storybook/types';
+import { Conditional } from 'storybook/internal/types';
 
 /**
  * TODO During the update from Storybook 6 to Storybook 7.5, these types were not available anymore.

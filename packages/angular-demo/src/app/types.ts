@@ -31,6 +31,11 @@ export interface Item {
 	description?: string;
 	size?: Size3;
 	meta?: object;
+
+	/**
+	 * @exclude-docs
+	 */
+	hiddenProperty: unknown;
 }
 
 export interface Size3 extends Size2 {
