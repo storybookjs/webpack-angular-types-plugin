@@ -1,7 +1,7 @@
 // These are ts-morph helper functions that are no publicly exported but should
 // bet rather used to get insights/help during development.
 
-import { Type, TypeFormatFlags } from 'ts-morph';
+import { ModuleKind, ModuleResolutionKind, ScriptTarget, Type, TypeFormatFlags } from 'ts-morph';
 
 /**
  * Prints a type with all available formatters. This helps to understand what
@@ -58,4 +58,90 @@ export function typeSummary(type: Type): object {
 	data.push({ check: 'Has a symbol', result: !!type.getSymbol() });
 	data.push({ check: 'Has alias symbol', result: !!type.getAliasSymbol() });
 	return data;
+}
+
+export function parseModuleKind(moduleString: string | undefined): ModuleKind {
+	switch (moduleString?.toLowerCase()) {
+		case 'commonjs':
+			return ModuleKind.CommonJS;
+		case 'amd':
+			return ModuleKind.AMD;
+		case 'umd':
+			return ModuleKind.UMD;
+		case 'system':
+			return ModuleKind.System;
+		case 'es6':
+		case 'es2015':
+			return ModuleKind.ES2015;
+		case 'es2020':
+			return ModuleKind.ES2020;
+		case 'es2022':
+			return ModuleKind.ES2022;
+		case 'esnext':
+			return ModuleKind.ESNext;
+		case 'node16':
+			return ModuleKind.Node16;
+		case 'nodenext':
+			return ModuleKind.NodeNext;
+		default:
+			console.warn(
+				`[WebpackAngularTypesPlugin]: Invalid or unknown "compilerOptions.module" retrieved from tsconfig: ${moduleString}. Defaulting to "es2020".`,
+			);
+			return ModuleKind.ES2020;
+	}
+}
+export function parseScriptTarget(targetString: string | undefined): ScriptTarget {
+	switch (targetString?.toLowerCase()) {
+		case 'es3':
+			return ScriptTarget.ES3;
+		case 'es5':
+			return ScriptTarget.ES5;
+		case 'es6':
+		case 'es2015':
+			return ScriptTarget.ES2015;
+		case 'es2016':
+			return ScriptTarget.ES2016;
+		case 'es2017':
+			return ScriptTarget.ES2017;
+		case 'es2018':
+			return ScriptTarget.ES2018;
+		case 'es2019':
+			return ScriptTarget.ES2019;
+		case 'es2020':
+			return ScriptTarget.ES2020;
+		case 'es2021':
+			return ScriptTarget.ES2021;
+		case 'es2022':
+			return ScriptTarget.ES2022;
+		case 'esnext':
+			return ScriptTarget.ESNext;
+		default:
+			console.warn(`
+				[WebpackAngularTypesPlugin]: Invalid or unknown "compilerOptions.target" retrieved from tsconfig: ${targetString}. Defaulting to "esnext".
+			`);
+			return ScriptTarget.ESNext;
+	}
+}
+
+export function parseModuleResolution(
+	moduleResolutionString: string | undefined,
+): ModuleResolutionKind {
+	switch (moduleResolutionString?.toLowerCase()) {
+		case 'classic':
+			return ModuleResolutionKind.Classic;
+		case 'node':
+		case 'nodejs':
+			return ModuleResolutionKind.NodeJs;
+		case 'node16':
+			return ModuleResolutionKind.Node16;
+		case 'nodenext':
+			return ModuleResolutionKind.NodeNext;
+		case 'bundler':
+			return ModuleResolutionKind.Bundler;
+		default:
+			console.warn(
+				`[WebpackAngularTypesPlugin]: Invalid or unknown "compilerOptions.moduleResolution" retrieved from tsconfig: ${moduleResolutionString}. Defaulting to "nodejs".`,
+			);
+			return ModuleResolutionKind.NodeJs;
+	}
 }

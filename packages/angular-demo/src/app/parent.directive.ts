@@ -3,13 +3,14 @@
 
 import { Directive, EventEmitter, Input } from '@angular/core';
 import { TestInterface } from './internal-types';
+import { GreatGrandParentDirective } from '@scope/entrypoint';
 
 interface X<T> {
 	x: T;
 }
 
 @Directive()
-export abstract class GrandParentDirective<T, S, R> {
+export abstract class GrandParentDirective<T, S, R> extends GreatGrandParentDirective {
 	@Input() nestedGenericTypeParameterInput?: EventEmitter<EventEmitter<S>>;
 }
 
