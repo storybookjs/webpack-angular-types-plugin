@@ -20,7 +20,8 @@
 			],
 			"storybook-webpack-angular-types-plugin/extract-arg-types": [
 				"packages/storybook-webpack-angular-types-plugin/extract-arg-types.ts"
-			]
+			],
+			"@scope/entrypoint": ["packages/angular-demo/src/entrypoint/index.ts"]
 		}
 	},
 	"exclude": ["node_modules", "tmp"]

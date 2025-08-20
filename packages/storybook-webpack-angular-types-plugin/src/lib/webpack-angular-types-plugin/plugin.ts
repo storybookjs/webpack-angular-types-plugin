@@ -1,8 +1,8 @@
-import { getTsconfig } from 'get-tsconfig';
+import { getTsconfig, TsConfigJsonResolved } from 'get-tsconfig';
 import * as micromatch from 'micromatch';
 import * as path from 'path';
 import * as process from 'process';
-import { ModuleKind, ModuleResolutionKind, Project, ScriptTarget } from 'ts-morph';
+import { Project } from 'ts-morph';
 import { Compiler, Module } from 'webpack';
 import { DEFAULT_TS_CONFIG_PATH, PLUGIN_NAME } from '../constants';
 import {
@@ -23,14 +23,24 @@ import {
 } from './templating/arg-code-block-templates';
 import { getPrototypeClassIdCodeBlock } from './templating/prototype-class-id-code-block-template';
 import { generateTypeInformation } from './type-extraction/type-extraction';
+import { parseModuleKind, parseModuleResolution, parseScriptTarget } from './ts-morph-helpers';
 
 export class WebpackAngularTypesPlugin {
 	// A queue for modules, that should be processed by the plugin in the next seal-hook
 	private moduleQueue: Module[] = [];
 
-	private readonly tsconfigPaths: string[] = this.getTsconfigPaths();
+	private readonly tsconfigPath: string;
+	private readonly tsconfig: TsConfigJsonResolved;
 
-	constructor(private options: WebpackAngularTypesPluginOptions = {}) {}
+	private readonly includedPaths: string[];
+
+	constructor(private options: WebpackAngularTypesPluginOptions = {}) {
+		this.tsconfigPath = this.options.tsconfigPath ?? DEFAULT_TS_CONFIG_PATH;
+		this.tsconfig = getTsconfig(this.tsconfigPath)?.config ?? {};
+
+		this.includedPaths = this.getIncludedPathsFromTsconfig(this.tsconfigPath, this.tsconfig);
+	}
+
 	apply(compiler: Compiler) {
 		compiler.hooks.compilation.tap(PLUGIN_NAME, (compilation) => {
 			compilation.dependencyTemplates.set(CodeDocDependency, new CodeDocDependencyTemplate());
@@ -43,11 +53,13 @@ export class WebpackAngularTypesPlugin {
 
 			compilation.hooks.seal.tap(PLUGIN_NAME, () => {
 				const smallTsProject = new Project({
-					// TODO this should be taken from the specified storybook tsconfig in the future
 					compilerOptions: {
-						module: ModuleKind.ES2020,
-						target: ScriptTarget.ESNext,
-						moduleResolution: ModuleResolutionKind.NodeJs,
+						module: parseModuleKind(this.tsconfig.compilerOptions?.module),
+						target: parseScriptTarget(this.tsconfig.compilerOptions?.target),
+						moduleResolution: parseModuleResolution(
+							this.tsconfig.compilerOptions?.moduleResolution,
+						),
+						paths: this.tsconfig.compilerOptions?.paths ?? {},
 					},
 				});
 				const modulesToProcess = this.moduleQueue
@@ -129,10 +141,7 @@ export class WebpackAngularTypesPlugin {
 			const codeDocDependency = new CodeDocDependency(
 				alias,
 				uniqueId,
-				getNonClassArgCodeBlock(
-					alias,
-					interfaceInformation.entitiesByCategory,
-				),
+				getNonClassArgCodeBlock(alias, interfaceInformation.entitiesByCategory),
 			);
 			module.addDependency(codeDocDependency);
 		}
@@ -161,7 +170,7 @@ export class WebpackAngularTypesPlugin {
 	}
 
 	private isPathIncludedInTsConfig(pathToCheck: string): boolean {
-		const res = micromatch([pathToCheck], this.tsconfigPaths, {
+		const res = micromatch([pathToCheck], this.includedPaths, {
 			format: this.toUnixPath,
 		});
 		return res.length === 1;
@@ -179,13 +188,15 @@ export class WebpackAngularTypesPlugin {
 		};
 	}
 
-	private getTsconfigPaths(): string[] {
-		const tsconfigPath = this.options.tsconfigPath ?? DEFAULT_TS_CONFIG_PATH;
-		const tsconfigResult = getTsconfig(tsconfigPath);
-		//
+	private getIncludedPathsFromTsconfig(
+		tsconfigPath: string,
+		tsconfig: TsConfigJsonResolved,
+	): string[] {
 		const tsConfigRootDir = path.join(process.cwd(), tsconfigPath, '..');
-		const includedPaths = tsconfigResult?.config.include || [];
-		const excludedPaths = tsconfigResult?.config.exclude || [];
+
+		const includedPaths = tsconfig.include || [];
+		const excludedPaths = tsconfig.exclude || [];
+
 		return [
 			...this.transformToAbsolutePaths(tsConfigRootDir, includedPaths),
 			...this.transformToAbsolutePaths(tsConfigRootDir, excludedPaths).map(this.negateGlob),
