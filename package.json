@@ -1,6 +1,6 @@
 {
 	"name": "storybook-webpack-angular-types-plugin",
-	"version": "0.9.2",
+	"version": "0.9.3",
 	"license": "MIT",
 	"scripts": {
 		"start-demo": "nx run angular-demo:storybook",
