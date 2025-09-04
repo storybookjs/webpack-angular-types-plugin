@@ -1,5 +1,5 @@
 import { STORYBOOK_ANGULAR_ARG_TYPES, STORYBOOK_COMPONENT_ID } from '../constants';
-import { EntitiesByCategory, Entity, JsDocParam } from '../types';
+import { EntitiesByCategory, Entity, EntityKind, JsDocParam } from '../types';
 import { Conditional } from 'storybook/internal/types';
 
 /**
@@ -89,8 +89,30 @@ const mapEntitiesToArgsTableProps = (entitiesByCategory: EntitiesByCategory): Ex
 		}
 	}
 
-	return argsTableProps;
+	return argsTableProps.sort(sortByEntityKind);
 };
+
+export function sortByEntityKind(a: ExtendedArgType, b: ExtendedArgType): number {
+	return (
+		getEntityKindPriority(a.table.category as EntityKind) -
+		getEntityKindPriority(b.table.category as EntityKind)
+	);
+}
+
+export function getEntityKindPriority(entityKind: EntityKind | undefined) {
+	switch (entityKind) {
+		case 'input':
+			return 0;
+		case 'output':
+			return 1;
+		case 'property':
+			return 2;
+		case 'method':
+			return 3;
+		default:
+			return 4;
+	}
+}
 
 export const extractArgTypes = <T>(type: Type<T>): ArgType[] | undefined => {
 	const entities =
