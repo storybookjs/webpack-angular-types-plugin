@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { ChildComponent } from './child.component';
 import { getLibraryAuthor } from './other-utils';
 import { getProductNumber, Product, UndocumentedSecret } from './types';
 import { ENVIRONMENT, IS_STANDALONE, isNumber, isString, LIB_NAME, VERSION } from './utils';
@@ -7,6 +8,7 @@ import { ENVIRONMENT, IS_STANDALONE, isNumber, isString, LIB_NAME, VERSION } fro
 	selector: 'app-root',
 	templateUrl: './app.component.html',
 	styleUrls: ['./app.component.scss'],
+	imports: [ChildComponent],
 })
 export class AppComponent {
 	@Input() testInput = '';
