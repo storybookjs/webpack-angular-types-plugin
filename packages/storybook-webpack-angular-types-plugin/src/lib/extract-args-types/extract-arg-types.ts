@@ -1,5 +1,5 @@
 import { STORYBOOK_ANGULAR_ARG_TYPES, STORYBOOK_COMPONENT_ID } from '../constants';
-import { EntitiesByCategory, Entity, JsDocParam } from '../types';
+import { Category, EntitiesByCategory, Entity, JsDocParam } from '../types';
 import { Conditional } from 'storybook/internal/types';
 
 /**
@@ -80,7 +80,13 @@ const mapEntityToArgsTableProp = (entity: Entity, category: string): ExtendedArg
 const mapEntitiesToArgsTableProps = (entitiesByCategory: EntitiesByCategory): ExtendedArgType[] => {
 	const argsTableProps: ExtendedArgType[] = [];
 
-	for (const [categoryKey, entities] of Object.entries<Entity[]>(entitiesByCategory)) {
+	const categoriesToEntities = Object.entries(entitiesByCategory).sort((entry1, entry2) => {
+		const category1 = entry1[0] as Category;
+		const category2 = entry2[0] as Category;
+		return getCategoryPriority(category1) - getCategoryPriority(category2);
+	});
+
+	for (const [categoryKey, entities] of categoriesToEntities) {
 		const sortedEntities = entities.sort((a: Entity, b: Entity) =>
 			(a.alias ?? a.name).localeCompare(b.alias ?? b.name),
 		);
@@ -91,6 +97,25 @@ const mapEntitiesToArgsTableProps = (entitiesByCategory: EntitiesByCategory): Ex
 
 	return argsTableProps;
 };
+
+function getCategoryPriority(category: Category) {
+	switch (category) {
+		case 'inputs':
+			return 0;
+		case 'outputs':
+			return 1;
+		case 'properties':
+			return 2;
+		case 'methods':
+			return 3;
+		case 'constants':
+			return 4;
+		case 'functions':
+			return 5;
+		default:
+			return 6;
+	}
+}
 
 export const extractArgTypes = <T>(type: Type<T>): ArgType[] | undefined => {
 	const entities =
