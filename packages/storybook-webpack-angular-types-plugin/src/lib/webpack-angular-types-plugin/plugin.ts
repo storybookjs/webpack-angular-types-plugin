@@ -8,6 +8,7 @@ import { DEFAULT_TS_CONFIG_PATH, PLUGIN_NAME } from '../constants';
 import {
 	ClassInformation,
 	ConstantInformation,
+	ExportsInformation,
 	FunctionInformation,
 	GroupedExportInformation,
 	InterfaceInformation,
@@ -15,7 +16,6 @@ import {
 	WebpackAngularTypesPluginOptions,
 } from '../types';
 import { getGlobalUniqueId } from './class-id-registry';
-import { groupExportInformation } from './grouping/group-export-information';
 import { CodeDocDependency, CodeDocDependencyTemplate } from './templating/code-doc-dependency';
 import {
 	getClassArgCodeBlock,
@@ -66,9 +66,8 @@ export class WebpackAngularTypesPlugin {
 					.map((module) => this.getProcessableModule(module))
 					.filter((module): module is ModuleInformation => !!module);
 
-				const collectedFunctionsInformation: FunctionInformation[] = [];
-				const collectedConstantsInformation: ConstantInformation[] = [];
-				const modulesWithFunctionsOrConstants: Module[] = [];
+				const modulePathToGroupBysMap = new Map<string, string[]>();
+				const groupByToExportsInformationMap = new Map<string, ExportsInformation>();
 
 				for (const { path } of modulesToProcess) {
 					smallTsProject.addSourceFileAtPath(path);
@@ -79,37 +78,125 @@ export class WebpackAngularTypesPlugin {
 					const {
 						classesInformation,
 						interfacesInformation,
-						functionsInformation,
 						constantsInformation,
+						functionsInformation,
 					} = generateTypeInformation(
 						path,
 						smallTsProject,
 						this.options.excludeProperties,
 					);
+
 					for (const classInformation of classesInformation) {
 						this.addClassCodeDocDependency(classInformation, module);
 					}
 					for (const interfaceInformation of interfacesInformation) {
 						this.addInterfaceCodeDocDependency(interfaceInformation, module);
 					}
-					if (functionsInformation.length || constantsInformation.length) {
-						modulesWithFunctionsOrConstants.push(module);
+					for (const constantInformation of constantsInformation) {
+						this.addConstantCodeDocDependency(constantInformation, module);
 					}
-					collectedFunctionsInformation.push(...functionsInformation);
-					collectedConstantsInformation.push(...constantsInformation);
-				}
+					for (const functionInformation of functionsInformation) {
+						this.addFunctionCodeDocDependency(functionInformation, module);
+					}
 
-				for (const moduleWithFunctionsOrConstants of modulesWithFunctionsOrConstants) {
-					const groupedExportsInformation = groupExportInformation(
-						collectedFunctionsInformation,
-						collectedConstantsInformation,
+					const constantsAndFunctionsInformation = functionsInformation.concat(
+						...constantsInformation,
 					);
 
-					for (const groupedExportInformation of groupedExportsInformation) {
-						this.addGroupedExportsCodeDocDependency(
-							groupedExportInformation,
-							moduleWithFunctionsOrConstants,
-						);
+					// If there are no constantsInformation and no functionsInformation in the current
+					// module, we don't have to do anything more for the current module.
+					if (!constantsAndFunctionsInformation.length) {
+						continue;
+					}
+
+					/*
+						Multiple constants and functions information from multiple source files
+					    can be grouped into the same ArgTypes table via groupBy.
+
+					    "groupBys" are aliases added via the @include-docs tags in the JSDoc,
+					    e.g. "@include-docs Alias1, Alias2".
+					    Information for all constants and functions annotated with "Alias1" will
+					    appear in the same ArgTypes table, same for "Alias2".
+
+					    For this to work, we need to add a CodeDocDependency with all exports
+					    that contain a specific groupBy alias to all modules that also have an
+					    export with the same groupBy alias.
+					*/
+
+					// For that, we first collect all aliases that occur in the current module.
+					const groupBys = Array.from(
+						new Set(constantsAndFunctionsInformation.flatMap((info) => info.groupBy)),
+					);
+
+					// We store all groupBy aliases of the current module in a map we can
+					// access later when adding the CodeDocDependencies.
+					modulePathToGroupBysMap.set(path, groupBys);
+
+					for (const groupBy of groupBys) {
+						// If an entry for the current groupBy alias already exists,
+						// return the existing, otherwise create a new empty
+						// ExportsInformation object.
+						let currentExportsInformation = groupByToExportsInformationMap.get(
+							groupBy,
+						) || {
+							constantsInformation: [],
+							functionsInformation: [],
+						};
+
+						for (const constantInformation of constantsInformation) {
+							if (constantInformation.groupBy.includes(groupBy)) {
+								// Add the current constantInformation and avoid multiple entries with
+								// the same name.
+								currentExportsInformation = {
+									...currentExportsInformation,
+									constantsInformation:
+										currentExportsInformation.constantsInformation
+											.filter((ci) => ci.name !== ci.name)
+											.concat(constantInformation),
+								};
+							}
+						}
+
+						for (const functionInformation of functionsInformation) {
+							if (functionInformation.groupBy.includes(groupBy)) {
+								// Add the current functionInformation and avoid multiple entries with
+								// the same name.
+								currentExportsInformation = {
+									...currentExportsInformation,
+									functionsInformation:
+										currentExportsInformation.functionsInformation
+											.filter((fi) => fi.name !== functionInformation.name)
+											.concat(functionInformation),
+								};
+							}
+						}
+
+						// After adding all new constantsInformation and functionsInformation,
+						// update the ExportsInformation map entry.
+						groupByToExportsInformationMap.set(groupBy, currentExportsInformation);
+					}
+				}
+
+				// Now, iterate over all modules a second time and add CodeDocDependencies
+				// for the grouped exports.
+				for (const { module, path } of modulesToProcess) {
+					const groupBys = modulePathToGroupBysMap.get(path) || [];
+					// Nothing to do if there are no groupBy aliases in the current module
+					if (!groupBys.length) {
+						continue;
+					}
+
+					for (const groupBy of groupBys) {
+						const exportsInformation = groupByToExportsInformationMap.get(groupBy);
+						if (!exportsInformation) {
+							continue;
+						}
+						const groupedExportInformation: GroupedExportInformation = {
+							name: groupBy,
+							constantsInformation: exportsInformation.constantsInformation,
+							functionsInformation: exportsInformation.functionsInformation,
+						};
+						this.addGroupedExportsCodeDocDependency(groupedExportInformation, module);
 					}
 				}
 
@@ -148,6 +235,36 @@ export class WebpackAngularTypesPlugin {
 	}
 
 	// noinspection JSMethodCanBeStatic
+	private addFunctionCodeDocDependency(
+		functionInformation: FunctionInformation,
+		module: Module,
+	): void {
+		const name = functionInformation.name;
+		const uniqueId = getGlobalUniqueId(module.identifier(), name);
+		const codeDocDependency = new CodeDocDependency(
+			name,
+			uniqueId,
+			getNonClassArgCodeBlock(name, { functions: [functionInformation.entity] }),
+		);
+		module.addDependency(codeDocDependency);
+	}
+
+	// noinspection JSMethodCanBeStatic
+	private addConstantCodeDocDependency(
+		constantInformation: ConstantInformation,
+		module: Module,
+	): void {
+		const name = constantInformation.name;
+		const uniqueId = getGlobalUniqueId(module.identifier(), name);
+		const codeDocDependency = new CodeDocDependency(
+			name,
+			uniqueId,
+			getNonClassArgCodeBlock(name, { constants: [constantInformation.entity] }),
+		);
+		module.addDependency(codeDocDependency);
+	}
+
+	// noinspection JSMethodCanBeStatic
 	private addGroupedExportsCodeDocDependency(
 		groupedExportInformation: GroupedExportInformation,
 		module: Module,
@@ -157,8 +274,8 @@ export class WebpackAngularTypesPlugin {
 			groupedExportInformation.name,
 			uniqueId,
 			getNonClassArgCodeBlock(groupedExportInformation.name, {
-				functions: groupedExportInformation.functionsInformation.map((f) => f.entity),
 				constants: groupedExportInformation.constantsInformation.map((c) => c.entity),
+				functions: groupedExportInformation.functionsInformation.map((f) => f.entity),
 			}),
 		);
 		module.addDependency(codeDocDependency);
