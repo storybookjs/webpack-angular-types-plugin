@@ -11,7 +11,7 @@ import { isNativeAngularMethod } from './angular-utils';
 import { collectBaseClasses, hasJsDocsTag } from './ast-utils';
 import { mapDeclarationToEntities } from './declaration-mappers';
 import { addGenericTypeMappings } from './type-details';
-import { getterOrSetterInputExists, mergeEntities } from './utils';
+import { getCategoryFromEntityKind, getterOrSetterInputExists, mergeEntities } from './utils';
 
 /**
  * Creates mappings from generic class arguments of a subClass to the generic
@@ -134,9 +134,8 @@ export function generateClassTypeInformation(
 	return {
 		name,
 		modulePath: filePath,
-		entitiesByCategory: groupBy(
-			mergedClassEntities,
-			(entity) => entity.kind,
+		entitiesByCategory: groupBy(mergedClassEntities, (entity) =>
+			getCategoryFromEntityKind(entity.kind),
 		) as EntitiesByCategory,
 	};
 }

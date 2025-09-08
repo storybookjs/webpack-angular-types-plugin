@@ -3,7 +3,7 @@ import { InterfaceDeclaration } from 'ts-morph';
 import { EXCLUDE_DOCS_JS_DOCS_PARAM, groupBy } from '../utils';
 import { collectBaseInterfaces, getJsDocsIncludeDocsAliases, hasJsDocsTag } from './ast-utils';
 import { mapSignatureToEntity } from './signature-mappers';
-import { getterOrSetterInputExists, mergeEntities } from './utils';
+import { getCategoryFromEntityKind, getterOrSetterInputExists, mergeEntities } from './utils';
 
 /**
  * Collects all interface entities (property and method signatures) of a interfaceDeclaration
@@ -85,9 +85,8 @@ export function generateInterfaceTypeInformation(
 		name,
 		aliases,
 		modulePath: filePath,
-		entitiesByCategory: groupBy(
-			mergedInterfaceEntities,
-			(entity) => entity.kind,
+		entitiesByCategory: groupBy(mergedInterfaceEntities, (entity) =>
+			getCategoryFromEntityKind(entity.kind),
 		) as EntitiesByCategory,
 	};
 }

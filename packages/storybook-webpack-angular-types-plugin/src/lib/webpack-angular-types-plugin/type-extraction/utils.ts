@@ -1,5 +1,5 @@
 import { PropertyDeclaration, Type } from 'ts-morph';
-import { Entity } from '../../types';
+import { Category, Entity, EntityKind } from '../../types';
 
 /**
  * Checks whether a getter/setter input is already present in the given map
@@ -80,4 +80,23 @@ export function getTypeArgument(type: Type, index: number): Type | undefined {
 	}
 
 	return typeArguments[index];
+}
+
+export function getCategoryFromEntityKind(entityKind: EntityKind): Category {
+	switch (entityKind) {
+		case 'input':
+			return 'inputs';
+		case 'output':
+			return 'outputs';
+		case 'property':
+			return 'properties';
+		case 'method':
+			return 'methods';
+		case 'constant':
+			return 'constants';
+		case 'function':
+			return 'functions';
+		default:
+			return entityKind;
+	}
 }

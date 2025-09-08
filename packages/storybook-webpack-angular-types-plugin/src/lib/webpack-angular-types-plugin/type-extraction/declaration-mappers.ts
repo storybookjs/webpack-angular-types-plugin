@@ -220,7 +220,7 @@ export function mapMethodDeclaration({
 
 export function mapFunctionDeclaration(functionDeclaration: FunctionDeclaration): Entity {
 	return {
-		kind: 'method',
+		kind: 'function',
 		alias: undefined,
 		name: functionDeclaration.getName() || '',
 		defaultValue: getJsDocsDefaultValue(functionDeclaration),
@@ -235,7 +235,7 @@ export function mapFunctionDeclaration(functionDeclaration: FunctionDeclaration)
 
 export function mapVariableDeclaration(variableStatement: VariableStatement): Entity {
 	return {
-		kind: 'property',
+		kind: 'constant',
 		alias: undefined,
 		name: getVariableName(variableStatement),
 		defaultValue:

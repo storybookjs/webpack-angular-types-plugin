@@ -20,7 +20,7 @@ export interface WebpackAngularTypesPluginOptions {
 }
 
 export type EntityModifier = 'getter' | 'setter';
-export type EntityKind = 'input' | 'output' | 'property' | 'method';
+export type EntityKind = 'input' | 'output' | 'property' | 'method' | 'constant' | 'function';
 
 export interface JsDocParam {
 	name: string;
@@ -41,10 +41,17 @@ export interface Entity {
 	modifier?: EntityModifier;
 }
 
-export const _Categories = ['inputs', 'outputs', 'properties', 'methods'] as const;
-export type Categories = (typeof _Categories)[number];
+export const _Categories = [
+	'inputs',
+	'outputs',
+	'properties',
+	'methods',
+	'functions',
+	'constants',
+] as const;
+export type Category = (typeof _Categories)[number];
 export type EntitiesByCategory = {
-	[category in Categories]: Entity[];
+	[category in Category]: Entity[];
 };
 
 export type ClassInformation = CommonClassLikeInformation;
