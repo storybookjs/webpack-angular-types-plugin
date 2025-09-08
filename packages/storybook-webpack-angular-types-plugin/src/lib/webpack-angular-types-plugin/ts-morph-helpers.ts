@@ -134,6 +134,8 @@ export function parseModuleResolution(
 			return ModuleResolutionKind.NodeJs;
 		case 'node16':
 			return ModuleResolutionKind.Node16;
+		case 'node10':
+			return ModuleResolutionKind.Node10;
 		case 'nodenext':
 			return ModuleResolutionKind.NodeNext;
 		case 'bundler':
