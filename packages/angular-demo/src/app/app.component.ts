@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { ChildComponent } from './child.component';
 import { getLibraryAuthor } from './other-utils';
-import { getProductNumber, Product, UndocumentedSecret } from './types';
+import { RaceCar, getProductNumber, Product, UndocumentedSecret } from './types';
 import { ENVIRONMENT, IS_STANDALONE, isNumber, isString, LIB_NAME, VERSION } from './utils';
 
 @Component({
@@ -26,6 +26,14 @@ export class AppComponent {
 			unit: '€',
 		},
 		hiddenProperty: '',
+	};
+
+	raceCar: RaceCar = {
+		brand: 'Ferrari',
+		model: '812 Superfast',
+		maxSpeed: 320,
+		price: 1500000,
+		numberOfWheels: 4,
 	};
 
 	/**
