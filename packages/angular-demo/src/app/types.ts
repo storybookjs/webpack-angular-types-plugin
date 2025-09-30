@@ -1,3 +1,5 @@
+import { PricedItem } from '@scope/entrypoint'; // eslint-disable-line @nx/enforce-module-boundaries
+
 export interface UndocumentedSecret {
 	secret: string;
 }
@@ -70,4 +72,39 @@ export interface Price {
 
 export function getProductNumber(product: Product) {
 	return `${product.id}X${product.itemNumber}`;
+}
+
+/**
+ * @include-docs
+ */
+export interface RaceCar extends Car, Vehicle, PricedItem {
+	/**
+	 * Maximum speed in km/h.
+	 */
+	maxSpeed: number;
+}
+
+export interface Car {
+	/**
+	 * Model name
+	 *
+	 * This is a property from an extended interface.
+	 */
+	model: string;
+
+	/**
+	 * Brand name
+	 *
+	 * This is a property from an extended interface.
+	 */
+	brand: string;
+}
+
+export interface Vehicle {
+	/**
+	 * Number of wheels
+	 *
+	 * This is a property from another extended interface.
+	 */
+	numberOfWheels: number;
 }
